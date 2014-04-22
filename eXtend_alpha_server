@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ "$#" -ne 3 ]; then
+	exit 1
+fi
+
+REMOTE_RES_X="$1"
+REMOTE_RES_Y="$2"
+
+export DISPLAY="$3"
+
+OUTPUT="`xrandr | grep -P '^VIRTUAL\d+ (disconnected|connected \()' | grep -Po '^VIRTUAL\d+' | head -1`"
+MODELINE="`cvt $REMOTE_RES_X $REMOTE_RES_Y | tail -1 | sed 's/^Modeline //'`"
+MODENAME="`grep -Po '\".*\"' <<< \"$MODELINE\"`"
+
+xrandr | grep "$MODENAME" &> /dev/null
+if [ "$?" -ne 0 ]; then
+	xrandr --newmode $MODELINE
+fi
+
+SCREENSIZE="`xrandr 2>&1 | grep -Po 'current \d+ x \d+' | head -1 | grep -Po '\d+'`"
+SCREENSIZE_X=`head -1 <<< "$SCREENSIZE"`
+SCREENSIZE_Y=`tail -1 <<< "$SCREENSIZE"`
+
+xrandr --addmode "$OUTPUT" "$MODENAME"
+xrandr --output "$OUTPUT" --mode "$MODENAME" --pos "${SCREENSIZE_X}x0"
+CLIP=`xrandr | grep "^$OUTPUT connected" | grep -Po '\d+x\d+[+]\d+[+]\d+'`
+
+if [ "$DEBUG" = true ]; then for i in REMOTE_RES_X REMOTE_RES_Y DISPLAY OUTPUT MODELINE MODENAME CLIP SCREENSIZE SCREENSIZE_X SCREENSIZE_Y; do
+	eval "echo \"$i=\$$i\""
+	echo
+done; fi
+
+x11vnc -display "$DISPLAY" -clip "$CLIP"
+
+xrandr --output "$OUTPUT" --off
