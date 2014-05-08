@@ -1,17 +1,18 @@
 diff --git a/x11vnc/xinerama.c b/x11vnc/xinerama.c
-index 001e2ca..d1e33ea 100644
+index 001e2ca..0d2ca71 100644
 --- a/x11vnc/xinerama.c
 +++ b/x11vnc/xinerama.c
-@@ -107,6 +107,12 @@ static void initialize_blackouts(char *list) {
- 			rfbLog("blackout rect: %s: x=%d-%d y=%d-%d\n", p,
- 			    x, X, y, Y);
- 
-+			/* take clipping region into account */
-+			x -= coff_x;
-+			X -= coff_x;
-+			y -= coff_y;
-+			Y -= coff_y;
+@@ -98,6 +98,13 @@ static void initialize_blackouts(char *list) {
+ 		if (y > Y) {
+ 			t = Y; Y = y; y = t;
+ 		}
 +
- 			/*
- 			 * note that the black out is x1 <= x but x < x2
- 			 * for the region. i.e. the x2, y2 are outside
++		/* take clipping region into account */
++		x = nfix(x - coff_x, wdpy_x);
++		X = nfix(X - coff_x, wdpy_x);
++		y = nfix(y - coff_y, wdpy_y);
++		Y = nfix(Y - coff_y, wdpy_y);
++
+ 		if (x < 0 || x > dpy_x || y < 0 || y > dpy_y ||
+ 		    X < 0 || X > dpy_x || Y < 0 || Y > dpy_y ||
+ 		    x == X || y == Y) {
