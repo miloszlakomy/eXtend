@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$#" -ne 3 ]; then
+if [ "$#" -lt 3 ]||[ "$#" -gt 6 ]; then
 	exit 1
 fi
 
@@ -8,6 +8,12 @@ REMOTE_RES_X="$1"
 REMOTE_RES_Y="$2"
 
 export DISPLAY="$3"
+
+if [ "$#" -gt 3 ]; then
+	export VNC="$4"
+else
+	export VNC=x11vnc
+fi
 
 OUTPUT="`xrandr | grep -P '^VIRTUAL\d+ (disconnected|connected \()' | grep -Po '^VIRTUAL\d+' | head -1`"
 MODELINE="`cvt $REMOTE_RES_X $REMOTE_RES_Y | tail -1 | sed 's/^Modeline //'`"
@@ -22,15 +28,28 @@ SCREENSIZE="`xrandr 2>&1 | grep -Po 'current \d+ x \d+' | head -1 | grep -Po '\d
 SCREENSIZE_X=`head -1 <<< "$SCREENSIZE"`
 SCREENSIZE_Y=`tail -1 <<< "$SCREENSIZE"`
 
+if [ "$#" -gt 4 ]; then
+	if [ "$#" -gt 5 ]; then
+		export OFFSET_X="$5"
+		export OFFSET_Y="$6"
+	else
+		exit 1
+	fi
+else
+		export OFFSET_X="$SCREENSIZE_X"
+		export OFFSET_Y=0
+fi
+
 xrandr --addmode "$OUTPUT" "$MODENAME"
-xrandr --output "$OUTPUT" --mode "$MODENAME" --pos "${SCREENSIZE_X}x0"
+xrandr --output "$OUTPUT" --mode "$MODENAME" --pos "${OFFSET_X}x${OFFSET_Y}"
 CLIP=`xrandr | grep "^$OUTPUT connected" | grep -Po '\d+x\d+[+]\d+[+]\d+'`
 
-if [ "$DEBUG" = true ]; then for i in REMOTE_RES_X REMOTE_RES_Y DISPLAY OUTPUT MODELINE MODENAME CLIP SCREENSIZE SCREENSIZE_X SCREENSIZE_Y; do
+if [ "$DEBUG" = true ]; then for i in REMOTE_RES_X REMOTE_RES_Y DISPLAY OUTPUT MODELINE MODENAME CLIP SCREENSIZE SCREENSIZE_X SCREENSIZE_Y VNC OFFSET_X OFFSET_Y; do
 	eval "echo \"$i=\$$i\""
 	echo
 done; fi
 
-x11vnc -display "$DISPLAY" -clip "$CLIP"
+$VNC -display "$DISPLAY" -clip "$CLIP"
 
 xrandr --output "$OUTPUT" --off
+
