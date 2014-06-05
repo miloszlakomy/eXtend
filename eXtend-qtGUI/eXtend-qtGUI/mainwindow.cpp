@@ -38,8 +38,6 @@ std::string exec(const char* cmd, bool verbose = true) {
     return result;
 }
 
-std::queue<std::thread> tq;
-
 void MainWindow::on_pushButton_clicked()
 {
     setEnabled(false);
@@ -48,15 +46,10 @@ void MainWindow::on_pushButton_clicked()
 
     const std::string sshAddress = sshAddressUsername + "@" + sshAddressServer;
 
-    tq.push(std::thread([sshAddress, this](){
+    std::thread([sshAddress, this](){
         exec((std::string() + "ssh \"" + sshAddress + "\" \"xrandr -display :0 | head -1 | sed 's/.*current \\([0-9]\\+\\)\\+ x \\([0-9]\\+\\)\\+.*/\\1x\\2/' && xrandr -display :0 | grep -o '[0-9]\\+x[0-9]\\++[0-9]\\++[0-9]\\+'\"").c_str());
         setEnabled(true);
-    }));
-
-    //std::thread &tr = tq.front();
-    //tr.join();
-
-    //system((std::string() + "bash eXtend_alpha_setup.sh " + sshAddress).c_str());
+    }).detach();
 }
 
 void MainWindow::on_pushButton_2_clicked()
@@ -66,9 +59,9 @@ void MainWindow::on_pushButton_2_clicked()
 
     const std::string sshAddress = sshAddressUsername + "@" + sshAddressServer;
 
-    tq.push(std::thread([sshAddress](){
+    std::thread([sshAddress](){
         exec((std::string() + "bash ../../eXtend_alpha_setup.sh " + sshAddress).c_str());
-    }));
+    }).detach();
 }
 
 void MainWindow::on_pushButton_3_clicked()
@@ -78,7 +71,9 @@ void MainWindow::on_pushButton_3_clicked()
 
 //    const std::string sshAddress = sshAddressUsername + "@" + sshAddressServer;
 
-    tq.push(std::thread([sshAddressServer](){
-        exec((std::string() + "vncviewer " + sshAddressServer + ":0 -fullscreen").c_str());
-    }));
+    const std::string& vncDisplay = ui->vncDisplay->text().toStdString();
+
+    std::thread([sshAddressServer, vncDisplay](){
+        exec((std::string() + "vncviewer " + sshAddressServer + vncDisplay + " -fullscreen").c_str());
+    }).detach();
 }
