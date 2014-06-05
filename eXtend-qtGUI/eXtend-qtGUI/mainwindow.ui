@@ -23,6 +23,9 @@
       <height>31</height>
      </rect>
     </property>
+    <property name="text">
+     <string>milosz</string>
+    </property>
    </widget>
    <widget class="QLabel" name="label">
     <property name="geometry">
@@ -40,14 +43,14 @@
    <widget class="QPushButton" name="pushButton">
     <property name="geometry">
      <rect>
-      <x>292</x>
-      <y>224</y>
-      <width>99</width>
+      <x>180</x>
+      <y>167</y>
+      <width>211</width>
       <height>27</height>
      </rect>
     </property>
     <property name="text">
-     <string>Boom</string>
+     <string>Get screen and display sizes</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_2">
@@ -71,6 +74,35 @@
       <width>141</width>
       <height>31</height>
      </rect>
+    </property>
+    <property name="text">
+     <string>10.22.113.187</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_2">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>195</y>
+      <width>211</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Launch x11vnc remotely</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_3">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>223</y>
+      <width>211</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Launch vncviewer</string>
     </property>
    </widget>
   </widget>

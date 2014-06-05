@@ -1,6 +1,11 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <iostream>
+#include <cstdio>
+#include <queue>
+#include <thread>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -13,11 +18,67 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+std::string exec(const char* cmd, bool verbose = true) {
+    if(verbose)
+        std::cout << cmd << std::endl;
+
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return "ERROR";
+    char buffer[128];
+    std::string result = "";
+    while(!feof(pipe)) {
+        if(fgets(buffer, 128, pipe) != NULL)
+            result += buffer;
+    }
+    pclose(pipe);
+
+    if(verbose)
+        std::cout << result << std::endl;
+
+    return result;
+}
+
+std::queue<std::thread> tq;
+
 void MainWindow::on_pushButton_clicked()
 {
     setEnabled(false);
-    std::string sshAddressUsername = ui->sshAddressUsername->text().toStdString();
-    std::string sshAddressServer = ui->sshAddressServer->text().toStdString();
+    const std::string& sshAddressUsername = ui->sshAddressUsername->text().toStdString();
+    const std::string& sshAddressServer = ui->sshAddressServer->text().toStdString();
 
-    system((std::string() + "bash eXtend_alpha_setup.sh " + sshAddressUsername + "@" + sshAddressServer).c_str());
+    const std::string sshAddress = sshAddressUsername + "@" + sshAddressServer;
+
+    tq.push(std::thread([sshAddress, this](){
+        exec((std::string() + "ssh \"" + sshAddress + "\" \"xrandr -display :0 | head -1 | sed 's/.*current \\([0-9]\\+\\)\\+ x \\([0-9]\\+\\)\\+.*/\\1x\\2/' && xrandr -display :0 | grep -o '[0-9]\\+x[0-9]\\++[0-9]\\++[0-9]\\+'\"").c_str());
+        setEnabled(true);
+    }));
+
+    //std::thread &tr = tq.front();
+    //tr.join();
+
+    //system((std::string() + "bash eXtend_alpha_setup.sh " + sshAddress).c_str());
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    const std::string& sshAddressUsername = ui->sshAddressUsername->text().toStdString();
+    const std::string& sshAddressServer = ui->sshAddressServer->text().toStdString();
+
+    const std::string sshAddress = sshAddressUsername + "@" + sshAddressServer;
+
+    tq.push(std::thread([sshAddress](){
+        exec((std::string() + "bash ../../eXtend_alpha_setup.sh " + sshAddress).c_str());
+    }));
+}
+
+void MainWindow::on_pushButton_3_clicked()
+{
+//    const std::string& sshAddressUsername = ui->sshAddressUsername->text().toStdString();
+    const std::string& sshAddressServer = ui->sshAddressServer->text().toStdString();
+
+//    const std::string sshAddress = sshAddressUsername + "@" + sshAddressServer;
+
+    tq.push(std::thread([sshAddressServer](){
+        exec((std::string() + "vncviewer " + sshAddressServer + ":0 -fullscreen").c_str());
+    }));
 }

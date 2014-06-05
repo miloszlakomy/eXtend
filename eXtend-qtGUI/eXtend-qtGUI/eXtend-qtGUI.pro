@@ -18,3 +18,6 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h
 
 FORMS    += mainwindow.ui
+
+QMAKE_CXXFLAGS += -std=c++0x -pthread
+#-Wl,--no-as-needed
