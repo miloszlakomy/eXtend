@@ -1,30 +1,17 @@
 <html>
     <head>
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-        <script>
-            $(document).ready(function() {
-                $('#status').text('logging in');
-                $.ajax('//localhost:8080/guacamole/login', {
-                           data: {
-                               username: 'inz',
-                               password: 'inz'
-                           },
-                           complete: function() {
-                               $('#status').text('OK, redirecting');
-                               window.location.href = '//localhost:8080/guacamole/client.xhtml?id=c%2F0';
-                           },
-                           error: function(jqxhr, textStatus, err) {
-                               $('#status').text('login failed: ' + textStatus + ', ' + err);
-                           }
-                       });
-            });
-        </script>
+        <!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script> -->
+        <script src="jquery.min.js"></script>
+        <script src="extend.js"></script>
+        <link rel="stylesheet" type="text/css" href="extend.css"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, target-densitydpi=device-dpi"/>
     </head>
     <body>
-        <div id="status">loading</div>
-        <form action="//localhost:8080/guacamole/login" id="login-form" method="post">
-            <input type="hidden" name="username" value="inz">
-            <input type="hidden" name="password" value="inz">
-        </form>
+        <div id="extend-container" class="fullscreen">
+            (click anywhere for fullscreen mode)
+            <div id="extend-status" class="fullscreen"></div>
+            <div id="extend-id-container" class="fullscreen"></div>
+            <div id="extend-guacamole" class="fullscreen"></div>
+        </div>
     </body>
 </html>

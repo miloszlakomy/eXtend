@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import base64
 import sys
 import socket
 import select
 import hashlib
 import struct
-import random
-import time
 
+DEBUG = True
+WS_DEBUG = False
 SERVER_PORT = 4242
 
 if len(sys.argv) > 1:
@@ -24,6 +25,13 @@ if len(sys.argv) > 1:
 #
 #LOCAL_IP = findLocalIP()
 
+def debug_print(*args, **kwargs):
+    if DEBUG:
+        print(*args, **kwargs)
+
+def ws_debug_print(*args, **kwargs):
+    if WS_DEBUG:
+        print(*args, **kwargs)
 
 class StructStream(object):
     def __init__(self, buf):
@@ -55,7 +63,7 @@ class StructStream(object):
             else:
                 raise AssertionError('unknown format character: %s' % c)
 
-        print('bytes for %s: %d' % (format, bytes))
+        ws_debug_print('bytes for %s: %d' % (format, bytes))
         return bytes
 
     def unpack(self, format):
@@ -140,7 +148,7 @@ class Websocket(socket.socket):
         return ''.join(wrappedParts)
 
     def _extract_headers(self, data):
-        print('_extract_headers')
+        ws_debug_print('_extract_headers')
         stream = StructStream(data)
         flags, maskAndLength = stream.unpack('!BB')
 
@@ -161,7 +169,7 @@ class Websocket(socket.socket):
         return isLast, type, length, mask, stream.get_data()
 
     def _unwrap_some(self, data):
-        print('_unwrap_some')
+        ws_debug_print('_unwrap_some')
         isLast, type, length, mask, data = self._extract_headers(data)
         rest = ''
 
@@ -173,14 +181,14 @@ class Websocket(socket.socket):
             data = ''.join([ chr(ord(c) ^ ord(mask[i % 4]))
                              for i, c in enumerate(data) ])
 
-        print('unmasked data: ' + data)
+        ws_debug_print('unmasked data: ' + data)
         return data, rest
 
     def unwrap(self, data):
-        print('unwrap')
+        ws_debug_print('unwrap')
         unwrapped, rest = self._unwrap_some(data)
         while rest:
-            print('%d bytes to go' % len(rest))
+            ws_debug_print('%d bytes to go' % len(rest))
             frame_data, rest = self._unwrap_some(rest)
             unwrapped += frame_data
 
@@ -219,22 +227,16 @@ Sec-WebSocket-Accept: %s
         self._client_key = None
         self._do_handshake()
 
-    def accept(self):
-        sock, addr = Websocket.accept(self)
-        websock = ClientWebsocket()
-        websock.__dict__.update(sock)
-        return websock, addr
-
     def send(self, data):
-        print('<< %s' % data)
+        debug_print('<< %s' % data)
         Websocket.send(self, self.wrap(data, None))
 
     def recv(self, maxBytes):
         data = Websocket.recv(self, maxBytes)
 
-        if (len(data) > Websocket.MIN_FRAME_LENGTH):
+        if len(data) > Websocket.MIN_FRAME_LENGTH:
             unwrapped = Websocket.unwrap(self, data)
-            print('>> %s' % unwrapped)
+            debug_print('>> %s' % unwrapped)
             return unwrapped
 
     def _do_handshake(self):
@@ -259,47 +261,85 @@ Sec-WebSocket-Accept: %s
             self._socket.send(ServerWebsocket.HANDSHAKE_MSG_FORMAT
                              % self._gen_accept_key())
             self._handshake_completed = True
-            print('handshake completed')
+            ws_debug_print('handshake completed')
             return
 
         words = line.split()
         if words[0] == 'Sec-WebSocket-Key:':
             self._client_key = words[1]
-            print('client key: %s' % words[1])
-        else:
-            pass # print('ignoring header: %s' % line)
+            ws_debug_print('client key: %s' % words[1])
+
+clientCommands = {}
+
+def ws_command(name):
+    def _wrapper(func):
+        def _check_arg_count(*args):
+            try:
+                func(*args)
+            except Exception as e:
+                print(str(e))
+                print('ignoring invalid command: %s %s'
+                      % (name, ' '.join('"%s"' % arg if ' ' in arg
+                                                     else arg
+                                        for arg in args[1:])))
+
+        global clientCommands
+        clientCommands[name] = _check_arg_count
+
+    return _wrapper
 
 class Client(object):
-    ID = 0
+    ID_GENERATOR = 0
 
-    def __init__(self,
-                 socket,
-                 remoteAddress):
+    def __init__(self, socket, remoteAddress, id = None):
         self.socket = socket
         self.address = remoteAddress
         self.buffer = ''
-        self.id = Client.ID
+        self.id = None
 
-        Client.ID += 1
+        debug_print('connection accepted: %s' % ':'.join(str(e) for e in remoteAddress))
 
-        print('connection accepted: %s, sending handshake' % ':'.join(str(e) for e in remoteAddress))
+    @ws_command('id')
+    def cmd_id(self, id):
+        self.set_id(int(id))
+        print('client %d: reusing id' % self.id)
+        
+    @ws_command('get-id')
+    def cmd_getId(self):
+        if self.id is None:
+            self.id = Client.ID_GENERATOR
+            Client.ID_GENERATOR += 1
+            print('assigned new id: %d' % self.id)
+        self.set_id(self.id)
+
+    @ws_command('resolution')
+    def cmd_resolution(self, width, height):
+        self.resolution = (int(width), int(height))
+        print('client %s: resolution %dx%d' % ((self.id,) + self.resolution))
 
     def _interpret_line(self, line):
+        if not line:
+            debug_print('ignoring empty line')
+            return
+
         argv = line.split(' ')
 
-        if argv[0] == 'get-id':
-            self.socket.send('id %d' % self.id)
-            self.socket.send('display')
-        elif argv[0] == 'resolution':
-            self.resolution = (int(argv[1]), int(argv[2]))
-            print('client %d: resolution %dx%d' % ((self.id,) + self.resolution))
+        global clientCommands
+        if argv[0] in clientCommands:
+            clientCommands[argv[0]](self, *argv[1:])
         else:
             print('unrecognized message: %s' % line)
+
+    def set_id(self, id):
+        self.id = id
+        self.socket.send('id %d' % self.id)
+        self.socket.send('login http://localhost:8080/guacamole/login inz inz')
+        self.socket.send('display http://localhost:8080/guacamole/client.xhtml?id=c%%2F%d' % self.id)
 
     def update(self):
         received = self.socket.recv(1024)
         if not received:
-            print('socket closed?')
+            print('socket closed for client %s' % str(self.id))
             return False
 
         self.buffer += received
@@ -318,28 +358,35 @@ serverSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 serverSocket.bind(('', SERVER_PORT))
 serverSocket.listen(5)
 
-sockets = {
-    serverSocket: None
-}
+sockets_to_clients = dict()
+
+def reassign_ids(clients):
+    id = 0
+    for client in clients:
+        client.set_id(id)
+        id += 1
 
 try:
     while True:
-        print('waiting')
-        ready, _, errors = select.select([ s for s in sockets ],
+        debug_print('waiting')
+        ready, _, errors = select.select([ serverSocket ] + [ s for s in sockets_to_clients ],
                                          [],
-                                         [ s for s in sockets ])
+                                         [ serverSocket ] + [ s for s in sockets_to_clients ])
         for sock in ready:
-            if sockets[sock] is None:
+            if sock is serverSocket:
                 clientSock, clientAddr = sock.accept()
-                sockets[clientSock] = Client(ServerWebsocket(clientSock), clientAddr)
-                print('added socket: %s:%d' % clientAddr)
+                sockets_to_clients[clientSock] = Client(ServerWebsocket(clientSock), clientAddr)
+                debug_print('added socket: %s:%d' % clientAddr)
             else:
-                if not sockets[sock].update():
-                    print('error for socket: %s' % ':'.join(str(e) for e in sockets[sock].address))
-                    del sockets[sock]
+                if not sockets_to_clients[sock].update():
+                    print('error for socket: %s' % ':'.join(str(e) for e in sockets_to_clients[sock].address))
+                    del sockets_to_clients[sock]
+                    # reassign_ids(sockets_to_clients.values())
 
         for sock in errors:
-            print('error for socket: %s' % ':'.join(str(e) for e in sockets[sock].address))
-            del sockets[sock]
+            print('error for socket: %s' % ':'.join(str(e) for e in sockets_to_clients[sock].address))
+            del sockets_to_clients[sock]
+            # reassign_ids(sockets_to_clients.values())
+
 except KeyboardInterrupt:
     pass
