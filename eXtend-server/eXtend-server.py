@@ -22,7 +22,19 @@ def processRunning(name):
   return found != []
 
 def handleClient(unixServerSocket):
-  print json.loads(unixServerSocket.makefile().read())
+  f = unixServerSocket.makefile()
+
+  args = json.loads(f.readline())
+
+  for arg in args:
+    print arg
+
+  returnCode = 0
+
+  f.write(returnCode)
+  f.close()
+
+  unixServerSocket.close()
 
 daemonProcessName = 'eXtend-server'
 
@@ -62,5 +74,13 @@ if __name__ == '__main__':
     unixClientSocket.settimeout(None)
     unixClientSocketFile = unixClientSocket.makefile()
 
-    unixClientSocketFile.write(json.dumps(sys.argv[1:], separators=(',',':')))
+    unixClientSocketFile.write(json.dumps(sys.argv[1:], separators=(',',':')) + '\n')
+    unixClientSocketFile.flush()
+
+    result = unixClientSocketFile.read()
+
+    unixClientSocketFile.close()
+    unixClientSocket.close()
+
+    sys.exit(int(result))
 
