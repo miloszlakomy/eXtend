@@ -1,18 +1,14 @@
 #!/usr/bin/env python
 
-import errno
+import json
 import os
 import re
-import setproctitle
+import socket
 import stat
 import subprocess
 import sys
 
-def fifoExists(path):
-  if not os.path.exists(path):
-    return False
-
-  return stat.S_ISFIFO(os.stat(path).st_mode)
+import setproctitle
 
 def runAndWait(cmd):
   process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -25,59 +21,46 @@ def processRunning(name):
 
   return found != []
 
-class FifoReader:
-  def __init__(self, fifoPath):
-    self.fifo = None
-    self.fifoPath = fifoPath
-    self.open()
-
-  def __del__(self):
-    self.close()
-
-  def mkfifo(self):
-    os.mkfifo(self.fifoPath)
-
-  def open(self):
-    try:
-      self.fifo = open(self.fifoPath)
-    except IOError as e:
-      if e.errno == errno.ENOENT:
-        self.mkfifo()
-        self.open()
-      else:
-        raise
-
-  def close(self):
-    if self.fifo != None:
-      self.fifo.close()
-
-  def readline(self):
-    line = self.fifo.readline()
-
-    while line == '':
-      self.close()
-      self.open()
-      line = self.fifo.readline()
-
-    return line
+def handleClient(unixServerSocket):
+  print json.loads(unixServerSocket.makefile().read())
 
 daemonProcessName = 'eXtend-server'
-fifoPath = os.path.expanduser('~/.' + daemonProcessName + '.pipe')
+
+unixSocketPath = os.path.expanduser('~/.' + daemonProcessName + '.socket')
+unixSocketBacklog = 128
+unixClientSocketConnectTimeout = 5
 
 if __name__ == '__main__':
 
   if not processRunning(daemonProcessName):
     setproctitle.setproctitle(daemonProcessName)
-    print 'eXtend-server daemon started'
+    print 'becoming eXtend-server daemon'
 
-    fr = FifoReader(fifoPath)
+    if os.path.exists(unixSocketPath):
+      if stat.S_ISSOCK(os.stat(unixSocketPath).st_mode):
+        os.unlink(unixSocketPath)
+      else:
+        raise Exception(unixSocketPath + ' already exists and is not a socket')
+
+    unixAcceptorSocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    unixAcceptorSocket.bind(unixSocketPath)
+    print 'unix socket bound to ' + unixSocketPath
+
+    unixAcceptorSocket.listen(unixSocketBacklog)
+    print 'unix socket started listening'
 
     while True:
-      print fr.readline()
+      unixServerSocket = unixAcceptorSocket.accept()[0]
+      print 'new unix socket connection accepted'
+      handleClient(unixServerSocket)
 
 
   else:
-    if fifoExists(fifoPath):
-      fifoHandle = open(fifoPath, 'w')
-      fifoHandle.write(str(sys.argv[1:]))
+    unixClientSocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    unixClientSocket.settimeout(unixClientSocketConnectTimeout)
+    unixClientSocket.connect(unixSocketPath)
+    unixClientSocket.settimeout(None)
+    unixClientSocketFile = unixClientSocket.makefile()
+
+    unixClientSocketFile.write(json.dumps(sys.argv[1:], separators=(',',':')))
 
