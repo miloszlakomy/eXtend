@@ -55,12 +55,39 @@ def handleUnixAcceptor(unixAcceptorSocket):
 #    unixClientHandler.daemon = True
     unixClientHandler.start()
 
+def handleInetClient(inetServerSocket):
+  f = inetServerSocket.makefile()
+
+  resolution = f.readline()
+
+  print resolution
+
+#  f.write(adres? i port vnc)
+
+  f.close()
+  inetServerSocket.close()
+
+def handleInetAcceptor(inetAcceptorSocket):
+  while True:
+    inetServerSocket, inetClientAddress = inetAcceptorSocket.accept()
+    print 'new inet socket connection accepted from ' + str(inetClientAddress)
+
+#    if inetClientAddress not in whitelist: return
+
+    inetClientHandler = threading.Thread(target = handleInetClient, args = (inetServerSocket, ))
+#    inetClientHandler.daemon = True
+    inetClientHandler.start()
+
 
 daemonProcessName = 'eXtend-server'
 
 unixSocketPath = os.path.expanduser('~/.' + daemonProcessName + '.socket')
 unixSocketBacklog = 128
 unixClientSocketConnectTimeout = 5
+
+inetSocketPort = 0X7E5D #xtend
+inetSocketAddress = ('', inetSocketPort)
+inetSocketBacklog = 128
 
 
 if __name__ == '__main__':
@@ -90,8 +117,21 @@ if __name__ == '__main__':
 #    unixAcceptorHandler.daemon = True
     unixAcceptorHandler.start()
 
+    inetAcceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    inetAcceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    inetAcceptorSocket.bind(inetSocketAddress)
+    print 'inet socket bound to ' + str(inetSocketAddress)
+
+    inetAcceptorSocket.listen(inetSocketBacklog)
+    print 'inet socket started listening'
+
+    inetAcceptorHandler = threading.Thread(target = handleInetAcceptor, args = (inetAcceptorSocket, ))
+#    inetAcceptorHandler.daemon = True
+    inetAcceptorHandler.start()
+
     for t in [initialCommandExecutor,
-              unixAcceptorHandler]:
+              unixAcceptorHandler,
+              inetAcceptorHandler]:
       t.join()
 
 
