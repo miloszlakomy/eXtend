@@ -7,40 +7,61 @@ import socket
 import stat
 import subprocess
 import sys
+import threading
 
 import setproctitle
 
 def runAndWait(cmd):
   process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-  process.wait()
-  return process.stdout.read()
+  return process.stdout.read(), process.wait()
 
 def processRunning(name):
-  ps = runAndWait('ps -u `whoami` o command')
-  found = re.findall('\n\s*' + name + '\s*\n', ps)
+  ps = runAndWait('pgrep -u `whoami` ' + name)
 
-  return found != []
+  return ps[1] == 0
 
-def handleClient(unixServerSocket):
+def formatResult(result):
+  return reduce(lambda x, y: str(x) + ' : ' + str(y), result)
+
+def initialCommandHandler(args):
+  result = returnCode, errorMessage = executeCommand(args)
+  print formatResult(result)
+
+def executeCommand(args):
+  print args
+
+  returnCode = 0
+  errorMessage = 'success'
+  return returnCode, errorMessage
+
+def handleUnixClient(unixServerSocket):
   f = unixServerSocket.makefile()
 
   args = json.loads(f.readline())
 
-  for arg in args:
-    print arg
+  returnCode, errorMessage = executeCommand(args)
 
-  returnCode = 0
+  f.write(json.dumps((returnCode, errorMessage)))
 
-  f.write(returnCode)
   f.close()
-
   unixServerSocket.close()
+
+def handleUnixAcceptor(unixAcceptorSocket):
+  while True:
+    unixServerSocket = unixAcceptorSocket.accept()[0]
+    print 'new unix socket connection accepted'
+
+    unixClientHandler = threading.Thread(target = handleUnixClient, args = (unixServerSocket, ))
+#    unixClientHandler.daemon = True
+    unixClientHandler.start()
+
 
 daemonProcessName = 'eXtend-server'
 
 unixSocketPath = os.path.expanduser('~/.' + daemonProcessName + '.socket')
 unixSocketBacklog = 128
 unixClientSocketConnectTimeout = 5
+
 
 if __name__ == '__main__':
 
@@ -61,10 +82,17 @@ if __name__ == '__main__':
     unixAcceptorSocket.listen(unixSocketBacklog)
     print 'unix socket started listening'
 
-    while True:
-      unixServerSocket = unixAcceptorSocket.accept()[0]
-      print 'new unix socket connection accepted'
-      handleClient(unixServerSocket)
+    initialCommandExecutor = threading.Thread(target = initialCommandHandler, args = (sys.argv[1:], ))
+#    initialCommandExecutor.daemon = True
+    initialCommandExecutor.start()
+
+    unixAcceptorHandler = threading.Thread(target = handleUnixAcceptor, args = (unixAcceptorSocket, ))
+#    unixAcceptorHandler.daemon = True
+    unixAcceptorHandler.start()
+
+    for t in [initialCommandExecutor,
+              unixAcceptorHandler]:
+      t.join()
 
 
   else:
@@ -77,10 +105,12 @@ if __name__ == '__main__':
     unixClientSocketFile.write(json.dumps(sys.argv[1:], separators=(',',':')) + '\n')
     unixClientSocketFile.flush()
 
-    result = unixClientSocketFile.read()
+    result = returnCode, errorMessage = json.loads(unixClientSocketFile.read())
+
+    print formatResult(result)
 
     unixClientSocketFile.close()
     unixClientSocket.close()
 
-    sys.exit(int(result))
+    sys.exit(returnCode)
 
