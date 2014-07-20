@@ -4,7 +4,6 @@ import collections
 import errno
 import os
 import select
-import signal
 import socket
 import subprocess
 import sys
@@ -195,13 +194,6 @@ class EXtendClient(object):
         return self.process_message(msg, {
             'vnc': lambda *args: self.vnc_start(*args)
         })
-
-def signal_handler(sig, stack_frame):
-    unlock()
-    sys.exit(1)
-
-for sig in [ signal.SIGTERM, signal.SIGINT, signal.SIGHUP ]:
-    signal.signal(sig, signal_handler)
 
 lock()
 
