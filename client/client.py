@@ -8,28 +8,64 @@ import signal
 import socket
 import subprocess
 import sys
+import argparse
 from pymouse import PyMouse
 
-TCP_PORT = int(os.getenv('TCP_PORT') or 0x7e5d)
-UDP_PORT = int(os.getenv('UDP_PORT') or TCP_PORT)
-TMP_PREFIX = os.getenv('TMPDIR') or '/tmp'
+DEFAULT_TCP_PORT = int(os.getenv('TCP_PORT') or 0x7e5d)
+DEFAULT_UDP_PORT = int(os.getenv('UDP_PORT') or 0x7e5d)
+DEFAULT_TMP_PREFIX = os.getenv('TMPDIR') or '/tmp'
+DEFAULT_LOCK_FILE = DEFAULT_TMP_PREFIX + '/.eXtend-client.lock'
 
-LOCK_FILE = TMP_PREFIX + '/.eXtend-client.lock'
+parser = argparse.ArgumentParser(description='eXtend client daemon.')
+parser.add_argument('-t', '--tcp-port',
+                    action='store',
+                    dest='tcp_port',
+                    default=DEFAULT_TCP_PORT,
+                    type=int,
+                    help='set TCP port used to communicate with the server. If '
+                         'not specified, the value of TCP_PORT environment '
+                         'variable will be used, or 0x7e5d (32349) if TCP_PORT '
+                         'is not set.')
+parser.add_argument('-u', '--udp-port',
+                    action='store',
+                    dest='udp_port',
+                    default=DEFAULT_UDP_PORT,
+                    type=int,
+                    help='set UDP port to listen for cursor coordinates on. If '
+                         'not specified, the value of UDP_PORT environment '
+                         'variable will be used, or 0x7e5d (32349) if UDP_PORT '
+                         'is not set.')
+parser.add_argument('-l', '--lock-file',
+                    action='store',
+                    dest='lock_file',
+                    default=DEFAULT_LOCK_FILE,
+                    help='set path to the lock file used. If not specified, '
+                         'the .eXtend-client.lock file will be placed in path '
+                         'specified by TMPDIR environment variable, or /tmp/ '
+                         'if TMPDIR is not set.')
+parser.add_argument('-s', '--server-ip',
+                    action='store',
+                    dest='server_ip',
+                    default=None,
+                    help='attempt to connect to given IP instead of listening '
+                         'for activity on UDP port.')
+
+ARGS = parser.parse_args()
 
 def get_screen_resolution():
     return PyMouse().screen_size()
 
 def lock():
-    if os.path.isfile(LOCK_FILE):
+    if os.path.isfile(ARGS.lock_file):
         print('Another eXtend-client instance is running or previous one '
               'crashed. Ensure there is no other client running or delete '
-              '%s file in case it crashed.' % LOCK_FILE)
+              '%s file in case it crashed.' % ARGS.lock_file)
         sys.exit(1)
 
-    open(LOCK_FILE, 'w').close()
+    open(ARGS.lock_file, 'w').close()
 
 def unlock():
-    os.remove(LOCK_FILE)
+    os.remove(ARGS.lock_file)
 
 class MessageBuffer(object):
     def __init__(self):
@@ -70,10 +106,13 @@ class EXtendClient(object):
         return (self.connected
                 or (self.vnc_process and self.vnc_process.poll is not None))
 
-    def run(self, udp_listen_port, tcp_connect_port):
+    def run(self, udp_listen_port, tcp_connect_port, server_ip=None):
         print('eXtend client daemon running')
         print('listening on UDP port %d' % udp_listen_port)
         self.udp_socket.bind(('0.0.0.0', udp_listen_port))
+
+        if server_ip is not None:
+            self.connect((server_ip, tcp_connect_port))
 
         while True:
             fail_sockets = [ self.tcp_socket ] if self.running() else []
@@ -167,7 +206,10 @@ for sig in [ signal.SIGTERM, signal.SIGINT, signal.SIGHUP ]:
 lock()
 
 try:
-    EXtendClient('vncviewer -viewonly HOST::PORT').run(UDP_PORT, TCP_PORT)
+    (EXtendClient('vncviewer -viewonly HOST::PORT')
+        .run(udp_listen_port=ARGS.udp_port,
+             tcp_connect_port=ARGS.tcp_port,
+             server_ip=ARGS.server_ip))
 finally:
     unlock()
 
