@@ -7,9 +7,22 @@ import socket
 import stat
 import subprocess
 import sys
+import time
 import threading
 
 import setproctitle
+
+
+daemonProcessName = 'eXtend-server'
+
+unixSocketPath = os.path.expanduser('~/.' + daemonProcessName + '.socket')
+unixSocketBacklog = 128
+unixClientSocketConnectTimeout = 5
+
+inetSocketPort = 0X7E5D #xtend
+inetSocketAddress = ('', inetSocketPort)
+inetSocketBacklog = 128
+
 
 def runAndWait(cmd):
   process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -78,79 +91,96 @@ def handleInetAcceptor(inetAcceptorSocket):
 #    inetClientHandler.daemon = True
     inetClientHandler.start()
 
+def spawnDaemon(func):
+  try:
+    pid = os.fork()
+    if pid > 0:
+      return
+  except OSError, e:
+    print >>sys.stderr, "fork #1 failed: %d (%s)" % (e.errno, e.strerror)
+    sys.exit(1)
 
-daemonProcessName = 'eXtend-server'
+  os.setsid()
 
-unixSocketPath = os.path.expanduser('~/.' + daemonProcessName + '.socket')
-unixSocketBacklog = 128
-unixClientSocketConnectTimeout = 5
+  try:
+    pid = os.fork()
+    if pid > 0:
+      sys.exit(0)
+  except OSError, e:
+    print >>sys.stderr, "fork #2 failed: %d (%s)" % (e.errno, e.strerror)
+    sys.exit(1)
 
-inetSocketPort = 0X7E5D #xtend
-inetSocketAddress = ('', inetSocketPort)
-inetSocketBacklog = 128
+  func()
+
+  os._exit(os.EX_OK)
+
+def daemon():
+  setproctitle.setproctitle(daemonProcessName)
+  print 'starting eXtend-server daemon'
+
+  if os.path.exists(unixSocketPath):
+    if stat.S_ISSOCK(os.stat(unixSocketPath).st_mode):
+      os.unlink(unixSocketPath)
+    else:
+      raise Exception(unixSocketPath + ' already exists and is not a socket')
+
+  unixAcceptorSocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+  unixAcceptorSocket.bind(unixSocketPath)
+  print 'unix socket bound to ' + unixSocketPath
+
+  unixAcceptorSocket.listen(unixSocketBacklog)
+  print 'unix socket started listening'
+
+  initialCommandExecutor = threading.Thread(target = initialCommandHandler, args = (sys.argv[1:], ))
+#  initialCommandExecutor.daemon = True
+  initialCommandExecutor.start()
+
+  unixAcceptorHandler = threading.Thread(target = handleUnixAcceptor, args = (unixAcceptorSocket, ))
+#  unixAcceptorHandler.daemon = True
+  unixAcceptorHandler.start()
+
+  inetAcceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  inetAcceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+  inetAcceptorSocket.bind(inetSocketAddress)
+  print 'inet socket bound to ' + str(inetSocketAddress)
+
+  inetAcceptorSocket.listen(inetSocketBacklog)
+  print 'inet socket started listening'
+
+  inetAcceptorHandler = threading.Thread(target = handleInetAcceptor, args = (inetAcceptorSocket, ))
+#  inetAcceptorHandler.daemon = True
+  inetAcceptorHandler.start()
+
+  for t in [initialCommandExecutor,
+            unixAcceptorHandler,
+            inetAcceptorHandler]:
+    t.join()
 
 
 if __name__ == '__main__':
 
   if not processRunning(daemonProcessName):
-    setproctitle.setproctitle(daemonProcessName)
-    print 'becoming eXtend-server daemon'
-
-    if os.path.exists(unixSocketPath):
-      if stat.S_ISSOCK(os.stat(unixSocketPath).st_mode):
-        os.unlink(unixSocketPath)
-      else:
-        raise Exception(unixSocketPath + ' already exists and is not a socket')
-
-    unixAcceptorSocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    unixAcceptorSocket.bind(unixSocketPath)
-    print 'unix socket bound to ' + unixSocketPath
-
-    unixAcceptorSocket.listen(unixSocketBacklog)
-    print 'unix socket started listening'
-
-    initialCommandExecutor = threading.Thread(target = initialCommandHandler, args = (sys.argv[1:], ))
-#    initialCommandExecutor.daemon = True
-    initialCommandExecutor.start()
-
-    unixAcceptorHandler = threading.Thread(target = handleUnixAcceptor, args = (unixAcceptorSocket, ))
-#    unixAcceptorHandler.daemon = True
-    unixAcceptorHandler.start()
-
-    inetAcceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    inetAcceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    inetAcceptorSocket.bind(inetSocketAddress)
-    print 'inet socket bound to ' + str(inetSocketAddress)
-
-    inetAcceptorSocket.listen(inetSocketBacklog)
-    print 'inet socket started listening'
-
-    inetAcceptorHandler = threading.Thread(target = handleInetAcceptor, args = (inetAcceptorSocket, ))
-#    inetAcceptorHandler.daemon = True
-    inetAcceptorHandler.start()
-
-    for t in [initialCommandExecutor,
-              unixAcceptorHandler,
-              inetAcceptorHandler]:
-      t.join()
+    spawnDaemon(daemon)
 
 
-  else:
-    unixClientSocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    unixClientSocket.settimeout(unixClientSocketConnectTimeout)
-    unixClientSocket.connect(unixSocketPath)
-    unixClientSocket.settimeout(None)
-    unixClientSocketFile = unixClientSocket.makefile()
+  while not os.path.exists(unixSocketPath):
+    time.sleep(1)
 
-    unixClientSocketFile.write(json.dumps(sys.argv[1:], separators=(',',':')) + '\n')
-    unixClientSocketFile.flush()
+  unixClientSocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+  unixClientSocket.settimeout(unixClientSocketConnectTimeout)
+  unixClientSocket.connect(unixSocketPath)
+  unixClientSocket.settimeout(None)
+  unixClientSocketFile = unixClientSocket.makefile()
 
-    result = returnCode, errorMessage = json.loads(unixClientSocketFile.read())
+  unixClientSocketFile.write(json.dumps(sys.argv[1:], separators=(',',':')) + '\n')
+  unixClientSocketFile.flush()
 
-    print formatResult(result)
+  result = returnCode, errorMessage = json.loads(unixClientSocketFile.read())
 
-    unixClientSocketFile.close()
-    unixClientSocket.close()
+  print formatResult(result)
 
-    sys.exit(returnCode)
+  unixClientSocketFile.close()
+  unixClientSocket.close()
+
+  sys.exit(returnCode)
 
