@@ -64,29 +64,29 @@ class EXtendClient(object):
 
         self.vnc_command = vnc_command
         self.vnc_process = None
+        self.display_offset = (0, 0)
 
     def running(self):
         return (self.connected
                 or (self.vnc_process and self.vnc_process.poll is not None))
 
-    def run(self, listen_port):
+    def run(self, udp_listen_port, tcp_connect_port):
         print('eXtend client daemon running')
-        print('listening on UDP port %d' % listen_port)
-        self.udp_socket.bind(('0.0.0.0', listen_port))
+        print('listening on UDP port %d' % udp_listen_port)
+        self.udp_socket.bind(('0.0.0.0', udp_listen_port))
 
         while True:
             fail_sockets = [ self.tcp_socket ] if self.running() else []
             read_sockets = [ self.udp_socket ] + fail_sockets
 
             try:
-                print('select')
                 ready, _, failed = select.select(read_sockets, [], fail_sockets)
 
                 if self.udp_socket in ready:
                     data, address = self.udp_socket.recvfrom(1024)
 
                     if not self.connected:
-                        self.connect((address[0], 6174))
+                        self.connect((address[0], tcp_connect_port))
 
                     self.udp_msg_buffer.update(data)
                     for msg in self.udp_msg_buffer:
@@ -123,15 +123,14 @@ class EXtendClient(object):
         cmd = (self.vnc_command.replace('HOST', vnc_host)
                                .replace('PORT', vnc_port)).split()
 
-        self.display_offset_x = int(offset_x)
-        self.display_offset_y = int(offset_y)
+        self.display_offset = (int(offset_x), int(offset_y))
 
         self.vnc_stop()
         self.vnc_process = subprocess.Popen(cmd)
 
     def set_cursor_pos(self, x, y):
-        PyMouse().move(x - self.display_offset_x,
-                       y - self.display_offset_y)
+        PyMouse().move(x - self.display_offset[0],
+                       y - self.display_offset[1])
 
     def process_message(self, msg, handlers):
         print('message: %s' % msg)
@@ -166,5 +165,9 @@ for sig in [ signal.SIGTERM, signal.SIGINT, signal.SIGHUP ]:
     signal.signal(sig, signal_handler)
 
 lock()
-EXtendClient('vncviewer -viewonly HOST::PORT').run(TCP_PORT)
+
+try:
+    EXtendClient('vncviewer -viewonly HOST::PORT').run(UDP_PORT, TCP_PORT)
+finally:
+    unlock()
 
