@@ -26,6 +26,8 @@ unixSocketPath = os.path.expanduser('~/.' + daemonProcessName + '.socket')
 unixSocketBacklog = 128
 unixClientSocketConnectTimeout = 5
 
+vncServerCommand = 'x11vnc'
+
 
 def runAndWait(cmd):
   process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
@@ -81,19 +83,32 @@ def handleInetClient(inetServerSocket):
 
 #  f.write(adres? i port vnc)
 
+  print resolution.split()
+  sp = subprocess.Popen('../eXtend_alpha_server %s %s $DISPLAY' % (resolution.split()[1], resolution.split()[2]), shell=True) #TODO
+  time.sleep(5) #TODO
+  f.write('192.168.0.17:5900') #TODO
   f.close()
+
+  sp.wait()
+
   inetServerSocket.close()
 
 def handleInetAcceptor(inetAcceptorSocket):
   while True:
     inetServerSocket, inetClientAddress = inetAcceptorSocket.accept()
-    print 'new inet socket connection accepted from %s:0X%X' % (str(inetClientAddress[0]), inetClientAddress[1])
+    print 'new tcp socket connection accepted from %s:0X%X' % (str(inetClientAddress[0]), inetClientAddress[1])
 
 #    if inetClientAddress not in whitelist: return
 
     inetClientHandler = threading.Thread(target = handleInetClient, args = (inetServerSocket, ))
 #    inetClientHandler.daemon = True
     inetClientHandler.start()
+
+def handleInetBroadcast(inetBroadcastSocket):
+  print 'udp broadcast started'
+  while True:
+    inetBroadcastSocket.sendto('cursor 10 10', ('<broadcast>', 0X7E5D))
+    time.sleep(0.01)
 
 def spawnDaemon(func, args):
   try:
@@ -148,19 +163,29 @@ def daemon(daemonSpawnLock):
   inetAcceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   inetAcceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
   inetAcceptorSocket.bind(inetSocketAddress)
-  print 'inet socket bound to %s:0X%X' % (
+  print 'tcp socket bound to %s:0X%X' % (
     'INADDR_ANY' if inetSocketAddress[0] == '' else str(inetSocketAddress[0]), inetSocketAddress[1])
 
   inetAcceptorSocket.listen(inetSocketBacklog)
-  print 'inet socket started listening'
+  print 'tcp socket started listening'
 
   inetAcceptorHandler = threading.Thread(target = handleInetAcceptor, args = (inetAcceptorSocket, ))
 #  inetAcceptorHandler.daemon = True
   inetAcceptorHandler.start()
 
+  inetBroadcastSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+  inetBroadcastSocket.bind(('', 0))
+  print 'udp broadcast socket bound'
+  inetBroadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+  inetBroadcastHandler = threading.Thread(target = handleInetBroadcast, args = (inetBroadcastSocket, ))
+#  inetBroadcastHandler.daemon = True
+  inetBroadcastHandler.start()
+
   for t in [initialCommandExecutor,
             unixAcceptorHandler,
-            inetAcceptorHandler]:
+            inetAcceptorHandler,
+            inetBroadcastHandler]:
     t.join()
 
 
