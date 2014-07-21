@@ -32,10 +32,10 @@ def runAndWait(cmd):
   return process.stdout.read(), process.wait()
 
 def processRunning(name):
-  command = 'ps -u `whoami` -o command | grep \'^ *%s *$\'' % name
+  command = 'ps -u `whoami` -o command'
   ps = runAndWait(command)
 
-  return ps[1] == 0
+  return re.findall('\n *' + name + ' *\n', '\n' + ps[0] + '\n') != []
 
 def formatResult(result):
   return reduce(lambda x, y: str(x) + ' : ' + str(y), result)
