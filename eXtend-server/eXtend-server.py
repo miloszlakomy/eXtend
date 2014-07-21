@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import fcntl
 import json
 import os
 import re
@@ -13,15 +14,17 @@ import threading
 import setproctitle
 
 
-daemonProcessName = 'eXtend-server'
+inetSocketPort = 0X7E5D #xtend
+inetSocketAddress = ('', inetSocketPort)
+inetSocketBacklog = 128
+
+daemonProcessName = 'eXtend-server_0X%X' % inetSocketPort
+
+daemonSpawnLockFile = os.path.expanduser('~/.' + daemonProcessName + '.lock')
 
 unixSocketPath = os.path.expanduser('~/.' + daemonProcessName + '.socket')
 unixSocketBacklog = 128
 unixClientSocketConnectTimeout = 5
-
-inetSocketPort = 0X7E5D #xtend
-inetSocketAddress = ('', inetSocketPort)
-inetSocketBacklog = 128
 
 
 def runAndWait(cmd):
@@ -29,7 +32,8 @@ def runAndWait(cmd):
   return process.stdout.read(), process.wait()
 
 def processRunning(name):
-  ps = runAndWait('pgrep -u `whoami` ' + name)
+  command = 'ps -u `whoami` -o command | grep \'^ *%s *$\'' % name
+  ps = runAndWait(command)
 
   return ps[1] == 0
 
@@ -83,7 +87,7 @@ def handleInetClient(inetServerSocket):
 def handleInetAcceptor(inetAcceptorSocket):
   while True:
     inetServerSocket, inetClientAddress = inetAcceptorSocket.accept()
-    print 'new inet socket connection accepted from ' + str(inetClientAddress)
+    print 'new inet socket connection accepted from %s:0X%X' % (str(inetClientAddress[0]), inetClientAddress[1])
 
 #    if inetClientAddress not in whitelist: return
 
@@ -91,7 +95,7 @@ def handleInetAcceptor(inetAcceptorSocket):
 #    inetClientHandler.daemon = True
     inetClientHandler.start()
 
-def spawnDaemon(func):
+def spawnDaemon(func, args):
   try:
     pid = os.fork()
     if pid > 0:
@@ -110,11 +114,11 @@ def spawnDaemon(func):
     print >>sys.stderr, "fork #2 failed: %d (%s)" % (e.errno, e.strerror)
     sys.exit(1)
 
-  func()
+  func(*args)
 
   os._exit(os.EX_OK)
 
-def daemon():
+def daemon(daemonSpawnLock):
   setproctitle.setproctitle(daemonProcessName)
   print 'starting eXtend-server daemon'
 
@@ -127,6 +131,8 @@ def daemon():
   unixAcceptorSocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
   unixAcceptorSocket.bind(unixSocketPath)
   print 'unix socket bound to ' + unixSocketPath
+
+  os.close(daemonSpawnLock) # release lock, fcntl.flock(daemonSpawnLock, fcntl.LOCK_UN) happens automatically on close
 
   unixAcceptorSocket.listen(unixSocketBacklog)
   print 'unix socket started listening'
@@ -142,7 +148,8 @@ def daemon():
   inetAcceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   inetAcceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
   inetAcceptorSocket.bind(inetSocketAddress)
-  print 'inet socket bound to ' + str(inetSocketAddress)
+  print 'inet socket bound to %s:0X%X' % (
+    'INADDR_ANY' if inetSocketAddress[0] == '' else str(inetSocketAddress[0]), inetSocketAddress[1])
 
   inetAcceptorSocket.listen(inetSocketBacklog)
   print 'inet socket started listening'
@@ -159,12 +166,22 @@ def daemon():
 
 if __name__ == '__main__':
 
-  if not processRunning(daemonProcessName):
-    spawnDaemon(daemon)
+  daemonSpawnLock = os.open(daemonSpawnLockFile, os.O_CREAT)
 
+  hasDaemonSpawnLock = False
+  try:
+    fcntl.flock(daemonSpawnLock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    hasDaemonSpawnLock = True
+  except OSError as e:
+    if e.errno != 11: raise # not 'Resource temporarily unavailable'
+  if hasDaemonSpawnLock and not processRunning(daemonProcessName):
+    spawnDaemon(daemon, (daemonSpawnLock, ))
 
-  while not os.path.exists(unixSocketPath):
-    time.sleep(1)
+  os.close(daemonSpawnLock)
+
+  daemonSpawnLock = os.open(daemonSpawnLockFile, 0)
+  fcntl.flock(daemonSpawnLock, fcntl.LOCK_SH) # Ensure that the daemon's AF_UNIX socket is bound
+  os.close(daemonSpawnLock)
 
   unixClientSocket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
   unixClientSocket.settimeout(unixClientSocketConnectTimeout)
