@@ -145,7 +145,8 @@ class EXtendClient(object):
         print('connecting to %s:%d' % address)
         self.tcp_socket.connect(address)
         self.connected = True
-        self.tcp_socket.send('resolution %s %s' % get_screen_resolution())
+        self.tcp_socket.send('resolution %s %s\n' % get_screen_resolution())
+        self.tcp_socket.makefile().flush()
 
     def reset(self):
         self.tcp_socket.close()
