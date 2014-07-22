@@ -88,7 +88,8 @@ def handleInetClient(inetServerSocket):
   print resolution.split()
   sp = subprocess.Popen('../eXtend_alpha_server %s %s $DISPLAY' % (resolution.split()[1], resolution.split()[2]), shell=True) #TODO
   time.sleep(5) #TODO
-  f.write('192.168.0.17:5900') #TODO
+  f.write('vnc %s 5900 0 0\n' % inetServerSocket.getsockname()[0])
+  f.flush()
   f.close()
 
   sp.wait()
