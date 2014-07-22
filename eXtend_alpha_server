@@ -12,7 +12,7 @@ export DISPLAY="$3"
 if [ "$#" -gt 3 ]; then
 	export VNC="$4"
 else
-	export VNC=x11vnc
+	export VNC='x11vnc -q'
 fi
 
 OUTPUT="`xrandr | grep -P '^VIRTUAL\d+ (disconnected|connected \()' | grep -Po '^VIRTUAL\d+' | head -1`"
