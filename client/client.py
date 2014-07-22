@@ -10,8 +10,9 @@ import sys
 import argparse
 from pymouse import PyMouse
 
-DEFAULT_TCP_PORT = int(os.getenv('TCP_PORT') or 0x7e5d)
-DEFAULT_UDP_PORT = int(os.getenv('UDP_PORT') or 0x7e5d)
+DEFAULT_TCP_PORT = int(os.getenv('EXTEND_TCP_PORT') or 0x7e5d)
+DEFAULT_MCAST_GROUP = os.getenv('EXTEND_MCAST_GROUP') or '224.0.126.93'
+DEFAULT_MCAST_PORT = int(os.getenv('EXTEND_MCAST_PORT') or 0x7e5d)
 DEFAULT_TMP_PREFIX = os.getenv('TMPDIR') or '/tmp'
 DEFAULT_LOCK_FILE = DEFAULT_TMP_PREFIX + '/.eXtend-client.lock'
 
@@ -22,18 +23,27 @@ parser.add_argument('-t', '--tcp-port',
                     default=DEFAULT_TCP_PORT,
                     type=int,
                     help='set TCP port used to communicate with the server. If '
-                         'not specified, the value of TCP_PORT environment '
-                         'variable will be used, or 0x7e5d (32349) if TCP_PORT '
-                         'is not set.')
-parser.add_argument('-u', '--udp-port',
+                         'not specified, the value of EXTEND_TCP_PORT '
+                         'environment variable will be used, or 0x7e5d (32349) '
+                         'if EXTEND_TCP_PORT is not set.')
+parser.add_argument('-g', '--multicast-group',
                     action='store',
-                    dest='udp_port',
-                    default=DEFAULT_UDP_PORT,
+                    dest='mcast_group',
+                    default=DEFAULT_MCAST_GROUP,
+                    help='set multicast group address to listen for cursor '
+                         'coordinates on. If not specified, the value of '
+                         'EXTEND_MCAST_GROUP environment variable will be '
+                         'used, or 224.0.126.93 if EXTEND_MCAST_GROUP is not '
+                         'set.')
+parser.add_argument('-p', '--multicast-port',
+                    action='store',
+                    dest='mcast_port',
+                    default=DEFAULT_MCAST_PORT,
                     type=int,
-                    help='set UDP port to listen for cursor coordinates on. If '
-                         'not specified, the value of UDP_PORT environment '
-                         'variable will be used, or 0x7e5d (32349) if UDP_PORT '
-                         'is not set.')
+                    help='set multicast port to listen for cursor coordinates '
+                         'on. If not specified, the value of EXTEND_MCAST_PORT '
+                         'environment variable will be used, or 0x7e5d (32349) '
+                         'if EXTEND_MCAST_GROUP is not set.')
 parser.add_argument('-l', '--lock-file',
                     action='store',
                     dest='lock_file',
@@ -105,10 +115,36 @@ class EXtendClient(object):
         return (self.connected
                 or (self.vnc_process and self.vnc_process.poll is not None))
 
-    def run(self, udp_listen_port, tcp_connect_port, server_ip=None):
+    def init_multicast(self, group, port):
+        print('listening for multicast messages to %s:%d' % (group, port))
+        self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
+        self.udp_socket.bind((group, port))
+
+    def on_udp_socket_ready(self):
+        data, address = self.udp_socket.recvfrom(1024)
+
+        if not self.connected:
+            self.connect((address[0], tcp_connect_port))
+
+        self.udp_msg_buffer.update(data)
+        for msg in self.udp_msg_buffer:
+            self.process_udp_message(msg)
+
+    def on_tcp_socket_ready(self):
+        data = self.tcp_socket.recv(1024)
+        if not data:
+            print('server disconnected, resetting')
+            self.reset()
+            return
+
+        self.tcp_msg_buffer.update(data)
+        for msg in self.tcp_msg_buffer:
+            self.process_tcp_message(msg)
+
+    def run(self, mcast_group, mcast_port, tcp_connect_port, server_ip=None):
         print('eXtend client daemon running')
-        print('listening on UDP port %d' % udp_listen_port)
-        self.udp_socket.bind(('0.0.0.0', udp_listen_port))
+        self.init_multicast(mcast_group, mcast_port)
 
         if server_ip is not None:
             self.connect((server_ip, tcp_connect_port))
@@ -121,19 +157,10 @@ class EXtendClient(object):
                 ready, _, failed = select.select(read_sockets, [], fail_sockets)
 
                 if self.udp_socket in ready:
-                    data, address = self.udp_socket.recvfrom(1024)
-
-                    if not self.connected:
-                        self.connect((address[0], tcp_connect_port))
-
-                    self.udp_msg_buffer.update(data)
-                    for msg in self.udp_msg_buffer:
-                        self.process_udp_message(msg)
+                    self.on_udp_socket_ready()
 
                 if self.tcp_socket in ready:
-                    self.tcp_msg_buffer.update(self.tcp_socket.recv(1024))
-                    for msg in self.tcp_msg_buffer:
-                        self.process_tcp_message(msg)
+                    self.on_tcp_socket_ready()
 
                 if self.tcp_socket in failed:
                     self.reset()
@@ -147,6 +174,7 @@ class EXtendClient(object):
         self.connected = True
         self.tcp_socket.send('resolution %s %s\n' % get_screen_resolution())
         self.tcp_socket.makefile().flush()
+        print('resolution sent')
 
     def reset(self):
         self.tcp_socket.close()
@@ -162,6 +190,7 @@ class EXtendClient(object):
         cmd = (self.vnc_command.replace('HOST', vnc_host)
                                .replace('PORT', vnc_port)).split()
 
+        print('starting vnc viewer (%s)' % cmd)
         self.display_offset = (int(offset_x), int(offset_y))
 
         self.vnc_stop()
@@ -187,11 +216,13 @@ class EXtendClient(object):
             print('invalid message: %s' % msg)
 
     def process_udp_message(self, msg):
+        print('UDP >> %s' % msg)
         return self.process_message(msg, {
             'cursor': lambda x, y: self.set_cursor_pos(int(x), int(y)),
         })
 
     def process_tcp_message(self, msg):
+        print('TCP >> %s' % msg)
         return self.process_message(msg, {
             'vnc': lambda *args: self.vnc_start(*args)
         })
@@ -199,8 +230,9 @@ class EXtendClient(object):
 lock()
 
 try:
-    (EXtendClient('vncviewer -viewonly HOST::PORT')
-        .run(udp_listen_port=ARGS.udp_port,
+    (EXtendClient('vncviewer -viewonly -fullscreen HOST::PORT')
+        .run(mcast_group=ARGS.mcast_group,
+             mcast_port=ARGS.mcast_port,
              tcp_connect_port=ARGS.tcp_port,
              server_ip=ARGS.server_ip))
 finally:
