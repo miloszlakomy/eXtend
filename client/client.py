@@ -8,6 +8,7 @@ import socket
 import subprocess
 import sys
 import argparse
+import struct
 from pymouse import PyMouse
 
 DEFAULT_TCP_PORT = int(os.getenv('EXTEND_TCP_PORT') or 0x7e5d)
@@ -117,8 +118,10 @@ class EXtendClient(object):
 
     def init_multicast(self, group, port):
         print('listening for multicast messages to %s:%d' % (group, port))
-        self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        join_req = struct.pack('4sl', socket.inet_aton(group), socket.INADDR_ANY)
+        self.udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, join_req)
         self.udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
+        self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.udp_socket.bind((group, port))
 
     def on_udp_socket_ready(self):
@@ -216,7 +219,6 @@ class EXtendClient(object):
             print('invalid message: %s' % msg)
 
     def process_udp_message(self, msg):
-        print('UDP >> %s' % msg)
         return self.process_message(msg, {
             'cursor': lambda x, y: self.set_cursor_pos(int(x), int(y)),
         })
@@ -230,7 +232,7 @@ class EXtendClient(object):
 lock()
 
 try:
-    (EXtendClient('vncviewer -viewonly -fullscreen HOST::PORT')
+    (EXtendClient('vncviewer -viewonly HOST::PORT')
         .run(mcast_group=ARGS.mcast_group,
              mcast_port=ARGS.mcast_port,
              tcp_connect_port=ARGS.tcp_port,
