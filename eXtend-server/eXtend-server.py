@@ -17,6 +17,8 @@ import setproctitle
 inetSocketPort = 0X7E5D #xtend
 inetSocketAddress = ('', inetSocketPort)
 inetSocketBacklog = 128
+multicastGroup = '224.0.126.93'
+multicastPort = inetSocketPort
 
 daemonProcessName = 'eXtend-server_0X%X' % inetSocketPort
 
@@ -104,11 +106,18 @@ def handleInetAcceptor(inetAcceptorSocket):
 #    inetClientHandler.daemon = True
     inetClientHandler.start()
 
-def handleInetBroadcast(inetBroadcastSocket):
-  print 'udp broadcast started'
+def setupBroadcastSocket(multicastGroup, multicastPort):
+  sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+  sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+  return sock
+
+def handleInetBroadcast(mcastGroup, mcastPort):
+  sock = setupBroadcastSocket(mcastGroup, mcastPort)
+
+  print 'udp multicast started on %s:%d' % (mcastGroup, mcastPort)
   while True:
-    inetBroadcastSocket.sendto('cursor 10 10', ('<broadcast>', 0X7E5D))
-    time.sleep(0.01)
+    sock.sendto('cursor 10 10\n', (mcastGroup, mcastPort))
+    time.sleep(0.02)
 
 def spawnDaemon(func, args):
   try:
@@ -173,12 +182,8 @@ def daemon(daemonSpawnLock):
 #  inetAcceptorHandler.daemon = True
   inetAcceptorHandler.start()
 
-  inetBroadcastSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-  inetBroadcastSocket.bind(('', 0))
-  print 'udp broadcast socket bound'
-  inetBroadcastSocket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-  inetBroadcastHandler = threading.Thread(target = handleInetBroadcast, args = (inetBroadcastSocket, ))
+  inetBroadcastHandler = threading.Thread(target = handleInetBroadcast,
+                                          args = (multicastGroup, multicastPort))
 #  inetBroadcastHandler.daemon = True
   inetBroadcastHandler.start()
 
