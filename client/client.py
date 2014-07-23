@@ -197,8 +197,9 @@ class EXtendClient(object):
         self.vnc_process = subprocess.Popen(cmd)
 
     def set_cursor_pos(self, x, y):
-        PyMouse().move(x - self.display_offset[0],
-                       y - self.display_offset[1])
+        #PyMouse().move(x - self.display_offset[0],
+                       #y - self.display_offset[1])
+        PyMouse().move(x, y)
 
     def process_message(self, msg, handlers):
         print('message: %s' % msg)
@@ -230,7 +231,7 @@ class EXtendClient(object):
 lock()
 
 try:
-    (EXtendClient('vncviewer -viewonly -fullscreen HOST::PORT')
+    (EXtendClient('vncviewer -viewonly HOST::PORT')
         .run(mcast_group=ARGS.mcast_group,
              mcast_port=ARGS.mcast_port,
              tcp_connect_port=ARGS.tcp_port,
