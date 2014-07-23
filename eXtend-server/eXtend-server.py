@@ -10,6 +10,7 @@ import subprocess
 import sys
 import time
 import threading
+import pymouse
 
 import setproctitle
 
@@ -17,8 +18,8 @@ import setproctitle
 inetSocketPort = 0X7E5D #xtend
 inetSocketAddress = ('', inetSocketPort)
 inetSocketBacklog = 128
-multicastGroup = '224.0.126.93'
-multicastPort = inetSocketPort
+mcastGroup = '224.0.126.93'
+mcastPort = inetSocketPort
 
 daemonProcessName = 'eXtend-server_0X%X' % inetSocketPort
 
@@ -112,13 +113,29 @@ def setupBroadcastSocket(multicastGroup, multicastPort):
   sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
   return sock
 
-def handleInetBroadcast(mcastGroup, mcastPort):
-  sock = setupBroadcastSocket(mcastGroup, mcastPort)
+class MouseThread(pymouse.PyMouseEvent):
+  def __init__(self):
+    pymouse.PyMouseEvent.__init__(self)
 
-  print 'udp multicast started on %s:%d' % (mcastGroup, mcastPort)
-  while True:
-    sock.sendto('cursor 10 10\n', (mcastGroup, mcastPort))
-    time.sleep(0.02)
+    global mcastGroup, mcastPort
+    self.sock = setupBroadcastSocket(mcastGroup, mcastPort)
+    self.lastEventTime = time.time()
+
+  def move(self, x, y):
+    global mcastGroup, mcastPort
+    currEventTime = time.time()
+    if currEventTime - self.lastEventTime > 0.03:
+      self.lastEventTime = currEventTime
+      self.sock.sendto('cursor %d %d\n' % (x, y), (mcastGroup, mcastPort))
+
+#def handleInetBroadcast(mcastGroup, mcastPort):
+  #sock = setupBroadcastSocket(mcastGroup, mcastPort)
+
+  #print 'udp multicast started on %s:%d' % (mcastGroup, mcastPort)
+  #mouse = pymouse.PyMouse()
+  #while True:
+    #sock.sendto('cursor %d %d\n' % mouse., (mcastGroup, mcastPort))
+    #time.sleep(0.02)
 
 def spawnDaemon(func, args):
   try:
@@ -183,8 +200,9 @@ def daemon(daemonSpawnLock):
 #  inetAcceptorHandler.daemon = True
   inetAcceptorHandler.start()
 
-  inetBroadcastHandler = threading.Thread(target = handleInetBroadcast,
-                                          args = (multicastGroup, multicastPort))
+  inetBroadcastHandler = MouseThread()
+  #threading.Thread(target = handleInetBroadcast,
+                                          #args = (multicastGroup, multicastPort))
 #  inetBroadcastHandler.daemon = True
   inetBroadcastHandler.start()
 

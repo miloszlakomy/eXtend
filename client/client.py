@@ -200,8 +200,9 @@ class EXtendClient(object):
         self.vnc_process = subprocess.Popen(cmd)
 
     def set_cursor_pos(self, x, y):
-        PyMouse().move(x - self.display_offset[0],
-                       y - self.display_offset[1])
+        #PyMouse().move(x - self.display_offset[0],
+                       #y - self.display_offset[1])
+        PyMouse().move(x, y)
 
     def process_message(self, msg, handlers):
         print('message: %s' % msg)
