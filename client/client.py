@@ -124,7 +124,10 @@ class EXtendClient(object):
         self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.udp_socket.bind((group, port))
 
-    def on_udp_socket_ready(self):
+        mreq = struct.pack('4sl', socket.inet_aton(group), socket.INADDR_ANY)
+        self.udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+
+    def on_udp_socket_ready(self, tcp_connect_port):
         data, address = self.udp_socket.recvfrom(1024)
 
         if not self.connected:
@@ -160,7 +163,7 @@ class EXtendClient(object):
                 ready, _, failed = select.select(read_sockets, [], fail_sockets)
 
                 if self.udp_socket in ready:
-                    self.on_udp_socket_ready()
+                    self.on_udp_socket_ready(tcp_connect_port)
 
                 if self.tcp_socket in ready:
                     self.on_tcp_socket_ready()
