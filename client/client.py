@@ -21,17 +21,12 @@ DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
 #DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT' # windowed
 DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT' # fullscreen
 
-def parse_int(val):
-    if val.startswith('0x'):
-        return int(val, 16)
-    return int(val)
-
 parser = argparse.ArgumentParser(description='eXtend client daemon.')
 parser.add_argument('-t', '--tcp-port',
                     action='store',
                     dest='tcp_port',
                     default=DEFAULT_TCP_PORT,
-                    type=parse_int,
+                    type=lambda x: int(x, 0),
                     help='set TCP port used to communicate with the server. If '
                          'not specified, the value of EXTEND_TCP_PORT '
                          'environment variable will be used, or 0x7e5d (32349) '
@@ -49,7 +44,7 @@ parser.add_argument('-p', '--multicast-port',
                     action='store',
                     dest='mcast_port',
                     default=DEFAULT_MCAST_PORT,
-                    type=parse_int,
+                    type=lambda x: int(x, 0),
                     help='set multicast port to listen for cursor coordinates '
                          'on. If not specified, the value of EXTEND_MCAST_PORT '
                          'environment variable will be used, or 0x7e5d (32349) '
