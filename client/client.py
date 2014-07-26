@@ -18,7 +18,7 @@ DEFAULT_LOCK_PREFIX = os.getenv('HOME') or '/tmp'
 DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
 
 #DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT' # windowed
-DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT -passwd PASSWD' # fullscreen
+DEFAULT_VNCCLIENT_CMD = 'cat PASSWD | vncviewer -fullscreen -viewonly HOST::PORT -autopass' # fullscreen
 
 parser = argparse.ArgumentParser(description='eXtend client daemon.')
 parser.add_argument('-g', '--multicast-group',
