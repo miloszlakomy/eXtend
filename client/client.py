@@ -257,7 +257,7 @@ for sig in [ signal.SIGTERM, signal.SIGHUP ]:
 client = None
 
 try:
-    client = EXtendClient(ARGS.vnc_server_cmd)
+    client = EXtendClient(ARGS.vnc_client_cmd)
     client.run(mcast_group=ARGS.mcast_group,
                mcast_port=ARGS.mcast_port,
                tcp_connect_port=ARGS.tcp_port,
