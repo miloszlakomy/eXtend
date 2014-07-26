@@ -120,6 +120,13 @@ class EXtendClient(object):
         self.vnc_process = None
         self.display_offset = (0, 0)
 
+        if not self.vnc_password_file:
+            self.vnc_password_file = os.path.expanduser('~/.eXtend_vncPwd')
+            if not os.path.exists(self.vnc_password_file):
+                fd = os.open(self.vnc_password_file, os.O_WRONLY | os.O_CREAT, 0600)
+                os.write(fd, 'lubieplacki')
+                os.close(fd)
+
         self.reset()
 
     def init_multicast(self, group, port):
