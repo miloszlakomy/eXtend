@@ -113,10 +113,6 @@ class EXtendClient(object):
 
         self.reset()
 
-    def running(self):
-        return (self.tcp_socket
-                or (self.vnc_process and self.vnc_process.poll is not None))
-
     def init_multicast(self, group, port):
         print('listening for multicast messages to %s:%d' % (group, port))
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -155,7 +151,7 @@ class EXtendClient(object):
             self.connect((server_ip, port))
 
         while True:
-            fail_sockets = [ self.tcp_socket ] if self.running() else []
+            fail_sockets = [ self.tcp_socket ] if self.tcp_socket else []
             read_sockets = [ self.udp_socket ] + fail_sockets
 
             try:
