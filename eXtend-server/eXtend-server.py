@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+from cvt import cvt
+from runAndWait import runAndWait
+from parse_xrandr import parse_xrandr
+
 import argparse
 import fcntl
 import json
@@ -44,10 +48,8 @@ unixClientSocketConnectTimeout = 5
 
 inetSocketsStarted = False
 
+vncCmd = 'x11vnc -q'
 
-def runAndWait(cmd):
-  process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-  return process.stdout.read(), process.wait()
 
 def processRunning(name):
   command = 'ps -u `whoami` -o command'
@@ -81,6 +83,7 @@ def executeCommand(parsedArgs):
   returnCode = 0
   errorMessage = 'success'
 
+  result = None
   if parsedArgs['stop']: suicide()
   if parsedArgs['start']: result = startInetSockets()
 
@@ -113,20 +116,36 @@ def handleUnixAcceptor(unixAcceptorSocket):
 def handleInetClient(inetServerSocket):
   f = inetServerSocket.makefile()
 
-  resolution = f.readline()
+  resolution = f.readline().split()
 
   print resolution
 
-#  f.write(adres? i port vnc)
+  assert resolution[0] == 'resolution'
+  resolution = map(int, resolution[1:])
 
-  print resolution.split()
-  sp = subprocess.Popen('../eXtend_alpha_server %s %s $DISPLAY' % (resolution.split()[1], resolution.split()[2]), shell=True) #TODO
+  modename, modeline = cvt(resolution[0], resolution[1])
+
+  screensize, outputs = parse_xrandr()
+
+  outputNum = 1
+  while outputs['VIRTUAL%d' % outputNum]['coords'] != None: outputNum += 1
+
+  xrandr = lambda cmd = '': runAndWait('xrandr ' + cmd)
+  xrandr('--newmode %s' % modeline)
+  xrandr('--addmode VIRTUAL%d %s' % (outputNum, modename))
+  xrandr('--output VIRTUAL%d --mode %s --pos %dx0' % (outputNum, modename, screensize[0]))
+
+  sp = subprocess.Popen('%s -clip %dx%d+%d+0' % (vncCmd, resolution[0], resolution[1], screensize[0]), shell=True)
+
+#  sp = subprocess.Popen('../eXtend_alpha_server %s %s $DISPLAY' % (resolution.split()[1], resolution.split()[2]), shell=True) #TODO
   time.sleep(5) #TODO
-  f.write('vnc %s 5900 1366 0\n' % inetServerSocket.getsockname()[0])
-  f.flush()
+  f.write('vnc %s 5900 %d 0\n' % (inetServerSocket.getsockname()[0], screensize[0])) #TODO
+
   f.close()
 
   sp.wait()
+
+  xrandr('--output VIRTUAL%d --off' % outputNum)
 
   inetServerSocket.close()
 
