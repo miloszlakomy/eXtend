@@ -12,9 +12,8 @@ import argparse
 import struct
 from pymouse import PyMouse
 
-DEFAULT_TCP_PORT = int(os.getenv('EXTEND_TCP_PORT') or 0x7e5d)
+DEFAULT_PORT = int(os.getenv('EXTEND_PORT') or 0x7e5d)
 DEFAULT_MCAST_GROUP = os.getenv('EXTEND_MCAST_GROUP') or '224.0.126.93'
-DEFAULT_MCAST_PORT = int(os.getenv('EXTEND_MCAST_PORT') or 0x7e5d)
 DEFAULT_LOCK_PREFIX = os.getenv('HOME') or '/tmp'
 DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
 
@@ -22,15 +21,6 @@ DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
 DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT' # fullscreen
 
 parser = argparse.ArgumentParser(description='eXtend client daemon.')
-parser.add_argument('-t', '--tcp-port',
-                    action='store',
-                    dest='tcp_port',
-                    default=DEFAULT_TCP_PORT,
-                    type=lambda x: int(x, 0),
-                    help='set TCP port used to communicate with the server. If '
-                         'not specified, the value of EXTEND_TCP_PORT '
-                         'environment variable will be used, or 0x7e5d (32349) '
-                         'if EXTEND_TCP_PORT is not set.')
 parser.add_argument('-g', '--multicast-group',
                     action='store',
                     dest='mcast_group',
@@ -40,15 +30,14 @@ parser.add_argument('-g', '--multicast-group',
                          'EXTEND_MCAST_GROUP environment variable will be '
                          'used, or 224.0.126.93 if EXTEND_MCAST_GROUP is not '
                          'set.')
-parser.add_argument('-p', '--multicast-port',
+parser.add_argument('-p', '--port',
                     action='store',
-                    dest='mcast_port',
-                    default=DEFAULT_MCAST_PORT,
+                    dest='port',
+                    default=DEFAULT_PORT,
                     type=lambda x: int(x, 0),
-                    help='set multicast port to listen for cursor coordinates '
-                         'on. If not specified, the value of EXTEND_MCAST_PORT '
-                         'environment variable will be used, or 0x7e5d (32349) '
-                         'if EXTEND_MCAST_GROUP is not set.')
+                    help='set port used for communication. If not specified, '
+                         'the value of EXTEND_PORT environment variable will '
+                         'be used, or 0x7e5d (32349) if EXTEND_PORT is not set.')
 parser.add_argument('-l', '--lock-file',
                     action='store',
                     dest='lock_file',
@@ -138,11 +127,11 @@ class EXtendClient(object):
         mreq = struct.pack('4sl', socket.inet_aton(group), socket.INADDR_ANY)
         self.udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
-    def on_udp_socket_ready(self, tcp_connect_port):
+    def on_udp_socket_ready(self, port):
         data, address = self.udp_socket.recvfrom(1024)
 
         if not self.connected:
-            self.connect((address[0], tcp_connect_port))
+            self.connect((address[0], port))
 
         self.process_udp_message(data)
 
@@ -157,12 +146,12 @@ class EXtendClient(object):
         for msg in self.tcp_msg_buffer:
             self.process_tcp_message(msg)
 
-    def run(self, mcast_group, mcast_port, tcp_connect_port, server_ip=None):
+    def run(self, mcast_group, port, server_ip=None):
         print('eXtend client daemon running')
-        self.init_multicast(mcast_group, mcast_port)
+        self.init_multicast(mcast_group, port)
 
         if server_ip is not None:
-            self.connect((server_ip, tcp_connect_port))
+            self.connect((server_ip, port))
 
         while True:
             fail_sockets = [ self.tcp_socket ] if self.running() else []
@@ -172,7 +161,7 @@ class EXtendClient(object):
                 ready, _, failed = select.select(read_sockets, [], fail_sockets)
 
                 if self.udp_socket in ready:
-                    self.on_udp_socket_ready(tcp_connect_port)
+                    self.on_udp_socket_ready(port)
 
                 if self.tcp_socket in ready:
                     self.on_tcp_socket_ready()
@@ -257,8 +246,7 @@ client = None
 try:
     client = EXtendClient(ARGS.vnc_client_cmd)
     client.run(mcast_group=ARGS.mcast_group,
-               mcast_port=ARGS.mcast_port,
-               tcp_connect_port=ARGS.tcp_port,
+               port=ARGS.port,
                server_ip=ARGS.server_ip)
 except KeyboardInterrupt:
     pass
