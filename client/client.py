@@ -105,7 +105,6 @@ class EXtendClient(object):
     def __init__(self, vnc_command):
         self.udp_socket = None
         self.tcp_socket = None
-        self.connected = False
         self.tcp_msg_buffer = MessageBuffer()
 
         self.vnc_command = vnc_command
@@ -115,7 +114,7 @@ class EXtendClient(object):
         self.reset()
 
     def running(self):
-        return (self.connected
+        return (self.tcp_socket
                 or (self.vnc_process and self.vnc_process.poll is not None))
 
     def init_multicast(self, group, port):
@@ -132,7 +131,7 @@ class EXtendClient(object):
     def on_udp_socket_ready(self, port):
         data, address = self.udp_socket.recvfrom(1024)
 
-        if not self.connected:
+        if not self.tcp_socket:
             self.connect((address[0], port))
 
         self.process_udp_message(data)
@@ -176,8 +175,8 @@ class EXtendClient(object):
 
     def connect(self, address):
         print('connecting to %s:%d' % address)
+        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.tcp_socket.connect(address)
-        self.connected = True
         self.tcp_socket.send('resolution %s %s\n' % get_screen_resolution())
         self.tcp_socket.makefile().flush()
         print('resolution sent')
@@ -185,8 +184,7 @@ class EXtendClient(object):
     def reset(self):
         if self.tcp_socket:
             self.tcp_socket.close()
-        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-        self.connected = False
+        self.tcp_socket = None
         self.vnc_stop()
 
     def vnc_stop(self):
