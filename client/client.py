@@ -14,8 +14,8 @@ from pymouse import PyMouse
 DEFAULT_TCP_PORT = int(os.getenv('EXTEND_TCP_PORT') or 0x7e5d)
 DEFAULT_MCAST_GROUP = os.getenv('EXTEND_MCAST_GROUP') or '224.0.126.93'
 DEFAULT_MCAST_PORT = int(os.getenv('EXTEND_MCAST_PORT') or 0x7e5d)
-DEFAULT_TMP_PREFIX = os.getenv('TMPDIR') or '/tmp'
-DEFAULT_LOCK_FILE = DEFAULT_TMP_PREFIX + '/.eXtend-client.lock'
+DEFAULT_LOCK_PREFIX = os.getenv('HOME') or '/tmp'
+DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
 
 parser = argparse.ArgumentParser(description='eXtend client daemon.')
 parser.add_argument('-t', '--tcp-port',
@@ -50,9 +50,9 @@ parser.add_argument('-l', '--lock-file',
                     dest='lock_file',
                     default=DEFAULT_LOCK_FILE,
                     help='set path to the lock file used. If not specified, '
-                         'the .eXtend-client.lock file will be placed in path '
-                         'specified by TMPDIR environment variable, or /tmp/ '
-                         'if TMPDIR is not set.')
+                         'the .eXtend-client.lock file will be placed in user '
+                         'home directory (HOME environment variable), or /tmp/ '
+                         'if HOME is not set.')
 parser.add_argument('-s', '--server-ip',
                     action='store',
                     dest='server_ip',
