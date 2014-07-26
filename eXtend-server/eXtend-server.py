@@ -192,6 +192,8 @@ def daemon(daemonSpawnLock):
 #  inetAcceptorHandler.daemon = True
   inetAcceptorHandler.start()
 
+  jsAcceptorSocket
+
   inetMulticastHandler = MouseThread()
   #threading.Thread(target = handleInetBroadcast,
                                           #args = (multicastGroup, multicastPort))
