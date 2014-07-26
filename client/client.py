@@ -18,6 +18,9 @@ DEFAULT_MCAST_PORT = int(os.getenv('EXTEND_MCAST_PORT') or 0x7e5d)
 DEFAULT_LOCK_PREFIX = os.getenv('HOME') or '/tmp'
 DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
 
+DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT' # windowed
+#DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT' # fullscreen
+
 parser = argparse.ArgumentParser(description='eXtend client daemon.')
 parser.add_argument('-t', '--tcp-port',
                     action='store',
@@ -60,6 +63,14 @@ parser.add_argument('-s', '--server-ip',
                     default=None,
                     help='attempt to connect to given IP instead of listening '
                          'for activity on UDP port.')
+parser.add_argument('-v', '--vnc-client-cmd',
+                    action='store',
+                    dest='vnc_client_cmd',
+                    default=DEFAULT_VNCCLIENT_CMD,
+                    help='set a shell command used to spawn VNC client. The '
+                         'HOST and PORT substrings will be replaced with the '
+                         'IP and port of the VNC server. Default: `%s`'
+                         % DEFAULT_VNCCLIENT_CMD)
 
 ARGS = parser.parse_args()
 
@@ -246,11 +257,11 @@ for sig in [ signal.SIGTERM, signal.SIGHUP ]:
 client = None
 
 try:
-    client = EXtendClient('vncviewer -viewonly HOST::PORT')
+    client = EXtendClient(ARGS.vnc_server_cmd)
     client.run(mcast_group=ARGS.mcast_group,
                mcast_port=ARGS.mcast_port,
                tcp_connect_port=ARGS.tcp_port,
-               server_ip=ARGS.server_ip))
+               server_ip=ARGS.server_ip)
 except KeyboardInterrupt:
     pass
 finally:
