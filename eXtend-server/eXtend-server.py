@@ -20,17 +20,20 @@ import threading
 import pymouse
 import setproctitle
 
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument('-p', '--port', type = lambda x: int(x, 0))
+parser.add_argument('-s', '--start', action = 'store_true')
+parser.add_argument('-S', '--stop', action = 'store_true')
+parser.add_argument('-P', '--password-file')
+
 # there's a second "if __name__ == '__main__':" at the end of this file
 if __name__ == '__main__':
-
-  parser = argparse.ArgumentParser()
-
-  parser.add_argument('-p', '--port', type = lambda x: int(x, 0))
-  parser.add_argument('--start', action = 'store_true')
-  parser.add_argument('--stop', action = 'store_true')
-
   parsedArgs = parser.parse_args()
 
+else:
+  parsedArgs = parser.parse_args(None)
 
 inetSocketPort = parsedArgs.port if parsedArgs.port != None else 0X7E5D #xtend
 inetSocketAddress = ('', inetSocketPort)
@@ -49,6 +52,12 @@ unixClientSocketConnectTimeout = 5
 inetSocketsStarted = False
 
 vncCmd = 'x11vnc -q'
+
+vncPasswordFile = parsedArgs.password_file if parsedArgs.password_file else os.path.expanduser('~/.eXtend_vncPwd')
+if not os.path.exists(vncPasswordFile):
+  fd = os.open(vncPasswordFile, os.O_WRONLY | os.O_CREAT, 0600)
+  os.write(fd, 'lubieplacki')
+  os.close(fd)
 
 
 def processRunning(name):
@@ -180,6 +189,13 @@ class MouseThread(pymouse.PyMouseEvent):
 
     global mcastGroup, mcastPort
     self.sock = setupMulticastSocket(mcastGroup, mcastPort)
+
+    self.spammer = threading.Thread(target = self.spam)
+    self.spammer.start()
+
+  def wait():
+    self.spammer.wait()
+    pymouse.PyMouseEvent.wait(self)
 
   def sendCoords(self, x, y):
     global mcastGroup, mcastPort
