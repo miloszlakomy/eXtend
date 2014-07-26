@@ -137,6 +137,7 @@ class EXtendClient(object):
         print('listening for multicast messages to %s:%d' % (group, port))
         self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
+        self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 8)
         self.udp_socket.bind((group, port))
 
         mreq = struct.pack('4sl', socket.inet_aton(group), socket.INADDR_ANY)
