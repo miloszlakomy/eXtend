@@ -3,6 +3,7 @@
 import collections
 import errno
 import os
+import signal
 import select
 import socket
 import subprocess
@@ -187,6 +188,7 @@ class EXtendClient(object):
 
     def vnc_stop(self):
         if self.vnc_process:
+            print('stopping vnc client')
             self.vnc_process.terminate()
             self.vnc_process = None
 
@@ -232,14 +234,27 @@ class EXtendClient(object):
             'vnc': lambda *args: self.vnc_start(*args)
         })
 
+def sighandler(*args):
+    raise KeyboardInterrupt
+
 lock()
 
+for sig in [ signal.SIGTERM, signal.SIGHUP ]:
+    signal.signal(sig, sighandler)
+
+client = None
+
 try:
-    (EXtendClient('vncviewer -viewonly HOST::PORT')
-        .run(mcast_group=ARGS.mcast_group,
-             mcast_port=ARGS.mcast_port,
-             tcp_connect_port=ARGS.tcp_port,
-             server_ip=ARGS.server_ip))
+    client = EXtendClient('vncviewer -viewonly HOST::PORT')
+    client.run(mcast_group=ARGS.mcast_group,
+               mcast_port=ARGS.mcast_port,
+               tcp_connect_port=ARGS.tcp_port,
+               server_ip=ARGS.server_ip))
+except KeyboardInterrupt:
+    pass
 finally:
+    if client:
+        client.vnc_stop()
+
     unlock()
 
