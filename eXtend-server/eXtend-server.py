@@ -16,6 +16,7 @@ import threading
 import pymouse
 import setproctitle
 
+# there's a second "if __name__ == '__main__':" at the end of this file
 if __name__ == '__main__':
 
   parser = argparse.ArgumentParser()
@@ -41,7 +42,7 @@ unixSocketPath = os.path.expanduser('~/.' + daemonProcessName + '.socket')
 unixSocketBacklog = 128
 unixClientSocketConnectTimeout = 5
 
-vncServerCommand = 'x11vnc'
+inetSocketsStarted = False
 
 
 def runAndWait(cmd):
@@ -60,14 +61,32 @@ def formatResult(result):
 def suicide():
   os.kill(os.getpid(), 1)
 
+def startInetSockets():
+  if inetSocketsStarted:
+    return 1, 'already started'
+
+  inetSocketStarted = True
+
+  inetAcceptorHandler = threading.Thread(target = handleInetAcceptor)
+#  inetAcceptorHandler.daemon = True
+  inetAcceptorHandler.start()
+
+  inetMulticastHandler = MouseThread()
+#  inetMulticastHandler.daemon = True
+  inetMulticastHandler.start()
+
 def executeCommand(parsedArgs):
   print parsedArgs
 
-  if parsedArgs['stop']:
-    suicide()
-
   returnCode = 0
   errorMessage = 'success'
+
+  if parsedArgs['stop']: suicide()
+  if parsedArgs['start']: result = startInetSockets()
+
+  if result != None:
+    returnCode, errorMessage = result
+
   return returnCode, errorMessage
 
 def handleUnixClient(unixServerSocket):
@@ -111,7 +130,16 @@ def handleInetClient(inetServerSocket):
 
   inetServerSocket.close()
 
-def handleInetAcceptor(inetAcceptorSocket):
+def handleInetAcceptor():
+  inetAcceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  inetAcceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+  inetAcceptorSocket.bind(inetSocketAddress)
+  print 'tcp socket bound to %s:0X%X' % (
+    'INADDR_ANY' if inetSocketAddress[0] == '' else str(inetSocketAddress[0]), inetSocketAddress[1])
+
+  inetAcceptorSocket.listen(inetSocketBacklog)
+  print 'tcp socket started listening'
+
   while True:
     inetServerSocket, inetClientAddress = inetAcceptorSocket.accept()
     print 'new tcp socket connection accepted from %s:0X%X' % (str(inetClientAddress[0]), inetClientAddress[1])
@@ -133,16 +161,12 @@ class MouseThread(pymouse.PyMouseEvent):
 
     global mcastGroup, mcastPort
     self.sock = setupMulticastSocket(mcastGroup, mcastPort)
-    self.lastEventTime = time.time()
 
   def move(self, x, y):
     global mcastGroup, mcastPort
-    currEventTime = time.time()
-    if currEventTime - self.lastEventTime > 0.05:
-      self.lastEventTime = currEventTime
 
-      msg = struct.pack('!II', x, y)
-      self.sock.sendto(msg, (mcastGroup, mcastPort))
+    msg = struct.pack('!II', x, y)
+    self.sock.sendto(msg, (mcastGroup, mcastPort))
 
 #def handleInetBroadcast(mcastGroup, mcastPort):
   #sock = setupBroadcastSocket(mcastGroup, mcastPort)
@@ -199,29 +223,7 @@ def daemon(daemonSpawnLock):
 #  unixAcceptorHandler.daemon = True
   unixAcceptorHandler.start()
 
-  inetAcceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  inetAcceptorSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-  inetAcceptorSocket.bind(inetSocketAddress)
-  print 'tcp socket bound to %s:0X%X' % (
-    'INADDR_ANY' if inetSocketAddress[0] == '' else str(inetSocketAddress[0]), inetSocketAddress[1])
-
-  inetAcceptorSocket.listen(inetSocketBacklog)
-  print 'tcp socket started listening'
-
-  inetAcceptorHandler = threading.Thread(target = handleInetAcceptor, args = (inetAcceptorSocket, ))
-#  inetAcceptorHandler.daemon = True
-  inetAcceptorHandler.start()
-
-  inetMulticastHandler = MouseThread()
-  #threading.Thread(target = handleInetBroadcast,
-                                          #args = (multicastGroup, multicastPort))
-#  inetMulticastHandler.daemon = True
-  inetMulticastHandler.start()
-
-  for t in [unixAcceptorHandler,
-            inetAcceptorHandler,
-            inetMulticastHandler]:
-    t.join()
+  unixAcceptorHandler.join()
 
 
 if __name__ == '__main__':
