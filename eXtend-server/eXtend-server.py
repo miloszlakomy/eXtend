@@ -45,10 +45,6 @@ def processRunning(name):
 def formatResult(result):
   return reduce(lambda x, y: str(x) + ' : ' + str(y), result)
 
-def initialCommandHandler(args):
-  result = returnCode, errorMessage = executeCommand(args)
-  print formatResult(result)
-
 def executeCommand(args):
   print args
 
@@ -108,7 +104,7 @@ def handleInetAcceptor(inetAcceptorSocket):
 #    inetClientHandler.daemon = True
     inetClientHandler.start()
 
-def setupBroadcastSocket(multicastGroup, multicastPort):
+def setupMulticastSocket(multicastGroup, multicastPort):
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
   sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
   return sock
@@ -118,7 +114,7 @@ class MouseThread(pymouse.PyMouseEvent):
     pymouse.PyMouseEvent.__init__(self)
 
     global mcastGroup, mcastPort
-    self.sock = setupBroadcastSocket(mcastGroup, mcastPort)
+    self.sock = setupMulticastSocket(mcastGroup, mcastPort)
     self.lastEventTime = time.time()
 
   def move(self, x, y):
@@ -179,10 +175,6 @@ def daemon(daemonSpawnLock):
   unixAcceptorSocket.listen(unixSocketBacklog)
   print 'unix socket started listening'
 
-  initialCommandExecutor = threading.Thread(target = initialCommandHandler, args = (sys.argv[1:], ))
-#  initialCommandExecutor.daemon = True
-  initialCommandExecutor.start()
-
   unixAcceptorHandler = threading.Thread(target = handleUnixAcceptor, args = (unixAcceptorSocket, ))
 #  unixAcceptorHandler.daemon = True
   unixAcceptorHandler.start()
@@ -200,16 +192,15 @@ def daemon(daemonSpawnLock):
 #  inetAcceptorHandler.daemon = True
   inetAcceptorHandler.start()
 
-  inetBroadcastHandler = MouseThread()
+  inetMulticastHandler = MouseThread()
   #threading.Thread(target = handleInetBroadcast,
                                           #args = (multicastGroup, multicastPort))
-#  inetBroadcastHandler.daemon = True
-  inetBroadcastHandler.start()
+#  inetMulticastHandler.daemon = True
+  inetMulticastHandler.start()
 
-  for t in [initialCommandExecutor,
-            unixAcceptorHandler,
+  for t in [unixAcceptorHandler,
             inetAcceptorHandler,
-            inetBroadcastHandler]:
+            inetMulticastHandler]:
     t.join()
 
 
