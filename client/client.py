@@ -224,7 +224,6 @@ class EXtendClient(object):
             print('invalid message: %s' % msg)
 
     def process_udp_message(self, msg):
-        print(repr(msg))
         x, y = struct.unpack('!II', msg)
         self.set_cursor_pos(x, y)
 
