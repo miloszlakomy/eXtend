@@ -241,9 +241,8 @@ class EXtendClient(object):
             print('invalid message: %s' % msg)
 
     def process_udp_message(self, msg):
-        return self.process_message(msg, {
-            'cursor': lambda x, y: self.set_cursor_pos(int(x), int(y)),
-        })
+        x, y = struct.unpack('!II', msg)
+        self.set_cursor_pos(x, y)
 
     def process_tcp_message(self, msg):
         print('TCP >> %s' % msg)

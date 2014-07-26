@@ -139,7 +139,9 @@ class MouseThread(pymouse.PyMouseEvent):
     currEventTime = time.time()
     if currEventTime - self.lastEventTime > 0.05:
       self.lastEventTime = currEventTime
-      self.sock.sendto('cursor %d %d\n' % (x, y), (mcastGroup, mcastPort))
+
+      msg = struct.pack('!II', x, y)
+      self.sock.sendto(msg, (mcastGroup, mcastPort))
 
 #def handleInetBroadcast(mcastGroup, mcastPort):
   #sock = setupBroadcastSocket(mcastGroup, mcastPort)
@@ -208,8 +210,6 @@ def daemon(daemonSpawnLock):
   inetAcceptorHandler = threading.Thread(target = handleInetAcceptor, args = (inetAcceptorSocket, ))
 #  inetAcceptorHandler.daemon = True
   inetAcceptorHandler.start()
-
-  jsAcceptorSocket
 
   inetMulticastHandler = MouseThread()
   #threading.Thread(target = handleInetBroadcast,
