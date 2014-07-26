@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import fcntl
 import json
 import os
@@ -10,12 +11,22 @@ import subprocess
 import sys
 import time
 import threading
-import pymouse
 
+import pymouse
 import setproctitle
 
+if __name__ == '__main__':
 
-inetSocketPort = 0X7E5D #xtend
+  parser = argparse.ArgumentParser()
+
+  parser.add_argument('-p', '--port', type = lambda x: int(x, 0))
+  parser.add_argument('--start', action = 'store_true')
+  parser.add_argument('--stop', action = 'store_true')
+
+  parsedArgs = parser.parse_args()
+
+
+inetSocketPort = parsedArgs.port if parsedArgs.port != None else 0X7E5D #xtend
 inetSocketAddress = ('', inetSocketPort)
 inetSocketBacklog = 128
 mcastGroup = '224.0.126.93'
@@ -45,8 +56,14 @@ def processRunning(name):
 def formatResult(result):
   return reduce(lambda x, y: str(x) + ' : ' + str(y), result)
 
-def executeCommand(args):
-  print args
+def suicide():
+  os.kill(os.getpid(), 1)
+
+def executeCommand(parsedArgs):
+  print parsedArgs
+
+  if parsedArgs['stop']:
+    suicide()
 
   returnCode = 0
   errorMessage = 'success'
@@ -55,9 +72,9 @@ def executeCommand(args):
 def handleUnixClient(unixServerSocket):
   f = unixServerSocket.makefile()
 
-  args = json.loads(f.readline())
+  parsedArgs = json.loads(f.readline())
 
-  returnCode, errorMessage = executeCommand(args)
+  returnCode, errorMessage = executeCommand(parsedArgs)
 
   f.write(json.dumps((returnCode, errorMessage)))
 
@@ -85,7 +102,7 @@ def handleInetClient(inetServerSocket):
   print resolution.split()
   sp = subprocess.Popen('../eXtend_alpha_server %s %s $DISPLAY' % (resolution.split()[1], resolution.split()[2]), shell=True) #TODO
   time.sleep(5) #TODO
-  f.write('vnc %s 5900 0 0\n' % inetServerSocket.getsockname()[0])
+  f.write('vnc %s 5900 1366 0\n' % inetServerSocket.getsockname()[0])
   f.flush()
   f.close()
 
@@ -120,7 +137,7 @@ class MouseThread(pymouse.PyMouseEvent):
   def move(self, x, y):
     global mcastGroup, mcastPort
     currEventTime = time.time()
-    if currEventTime - self.lastEventTime > 0.03:
+    if currEventTime - self.lastEventTime > 0.05:
       self.lastEventTime = currEventTime
       self.sock.sendto('cursor %d %d\n' % (x, y), (mcastGroup, mcastPort))
 
@@ -231,15 +248,16 @@ if __name__ == '__main__':
   unixClientSocket.settimeout(None)
   unixClientSocketFile = unixClientSocket.makefile()
 
-  unixClientSocketFile.write(json.dumps(sys.argv[1:], separators=(',',':')) + '\n')
+  unixClientSocketFile.write(json.dumps(vars(parsedArgs), separators=(',',':')) + '\n')
   unixClientSocketFile.flush()
 
-  result = returnCode, errorMessage = json.loads(unixClientSocketFile.read())
+  if not parsedArgs.stop:
+    result = returnCode, errorMessage = json.loads(unixClientSocketFile.read())
 
-  print formatResult(result)
+    print formatResult(result)
 
-  unixClientSocketFile.close()
-  unixClientSocket.close()
+    unixClientSocketFile.close()
+    unixClientSocket.close()
 
-  sys.exit(returnCode)
+    sys.exit(returnCode)
 
