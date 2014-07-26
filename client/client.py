@@ -103,15 +103,16 @@ class MessageBuffer(object):
 
 class EXtendClient(object):
     def __init__(self, vnc_command):
-        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
-        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+        self.udp_socket = None
+        self.tcp_socket = None
         self.connected = False
-        self.udp_msg_buffer = MessageBuffer()
         self.tcp_msg_buffer = MessageBuffer()
 
         self.vnc_command = vnc_command
         self.vnc_process = None
         self.display_offset = (0, 0)
+
+        self.reset()
 
     def running(self):
         return (self.connected
@@ -119,10 +120,9 @@ class EXtendClient(object):
 
     def init_multicast(self, group, port):
         print('listening for multicast messages to %s:%d' % (group, port))
-        join_req = struct.pack('4sl', socket.inet_aton(group), socket.INADDR_ANY)
-        self.udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, join_req)
-        self.udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
+        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
         self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 8)
         self.udp_socket.bind((group, port))
 
@@ -183,7 +183,9 @@ class EXtendClient(object):
         print('resolution sent')
 
     def reset(self):
-        self.tcp_socket.close()
+        if self.tcp_socket:
+            self.tcp_socket.close()
+        self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         self.connected = False
         self.vnc_stop()
 
