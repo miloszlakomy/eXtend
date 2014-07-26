@@ -7,6 +7,7 @@ import os
 import re
 import socket
 import stat
+import struct
 import subprocess
 import sys
 import time
