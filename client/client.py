@@ -18,7 +18,7 @@ DEFAULT_LOCK_PREFIX = os.getenv('HOME') or '/tmp'
 DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
 
 #DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT' # windowed
-DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT' # fullscreen
+DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT -passwd PASSWD' # fullscreen
 
 parser = argparse.ArgumentParser(description='eXtend client daemon.')
 parser.add_argument('-g', '--multicast-group',
@@ -57,9 +57,17 @@ parser.add_argument('-v', '--vnc-client-cmd',
                     dest='vnc_client_cmd',
                     default=DEFAULT_VNCCLIENT_CMD,
                     help='set a shell command used to spawn VNC client. The '
-                         'HOST and PORT substrings will be replaced with the '
-                         'IP and port of the VNC server. Default: `%s`'
+                         'HOST and PORT and PASS substrings will be replaced '
+                         'with the IP and port and password used to connect '
+                         'to the VNC server. Default: `%s`'
                          % DEFAULT_VNCCLIENT_CMD)
+parser.add_argument('-w', '--vnc-passwd-file',
+                    action='store',
+                    dest='vnc_password_file',
+                    default='',
+                    help='path to the file containing a password used to '
+                         'authenticate with the VNC server. If not specified, '
+                         'no password will be used.')
 
 ARGS = parser.parse_args()
 
@@ -102,12 +110,13 @@ class MessageBuffer(object):
         return ret
 
 class EXtendClient(object):
-    def __init__(self, vnc_command):
+    def __init__(self, vnc_command, vnc_password_file):
         self.udp_socket = None
         self.tcp_socket = None
         self.tcp_msg_buffer = MessageBuffer()
 
         self.vnc_command = vnc_command
+        self.vnc_password_file = vnc_password_file
         self.vnc_process = None
         self.display_offset = (0, 0)
 
@@ -191,7 +200,8 @@ class EXtendClient(object):
 
     def vnc_start(self, vnc_host, vnc_port, offset_x, offset_y):
         cmd = (self.vnc_command.replace('HOST', vnc_host)
-                               .replace('PORT', vnc_port)).split()
+                               .replace('PORT', vnc_port)
+                               .replace('PASSWD', self.vnc_password_file).split())
 
         print('starting vnc viewer (%s)' % cmd)
         self.display_offset = (int(offset_x), int(offset_y))
@@ -240,7 +250,8 @@ for sig in [ signal.SIGTERM, signal.SIGHUP ]:
 client = None
 
 try:
-    client = EXtendClient(ARGS.vnc_client_cmd)
+    client = EXtendClient(ARGS.vnc_client_cmd,
+                          ARGS.vnc_password_file)
     client.run(mcast_group=ARGS.mcast_group,
                port=ARGS.port,
                server_ip=ARGS.server_ip)
