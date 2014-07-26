@@ -45,9 +45,9 @@ def processRunning(name):
 def formatResult(result):
   return reduce(lambda x, y: str(x) + ' : ' + str(y), result)
 
-def initialCommandHandler(args):
-  result = returnCode, errorMessage = executeCommand(args)
-  print formatResult(result)
+#def initialCommandHandler(args):
+#  result = returnCode, errorMessage = executeCommand(args)
+#  print formatResult(result)
 
 def executeCommand(args):
   print args
@@ -126,6 +126,7 @@ class MouseThread(pymouse.PyMouseEvent):
     currEventTime = time.time()
     if currEventTime - self.lastEventTime > 0.03:
       self.lastEventTime = currEventTime
+      print 'cursor %d %d' % (x, y)
       self.sock.sendto('cursor %d %d\n' % (x, y), (mcastGroup, mcastPort))
 
 #def handleInetBroadcast(mcastGroup, mcastPort):
@@ -179,9 +180,9 @@ def daemon(daemonSpawnLock):
   unixAcceptorSocket.listen(unixSocketBacklog)
   print 'unix socket started listening'
 
-  initialCommandExecutor = threading.Thread(target = initialCommandHandler, args = (sys.argv[1:], ))
-#  initialCommandExecutor.daemon = True
-  initialCommandExecutor.start()
+#  initialCommandExecutor = threading.Thread(target = initialCommandHandler, args = (sys.argv[1:], ))
+##  initialCommandExecutor.daemon = True
+#  initialCommandExecutor.start()
 
   unixAcceptorHandler = threading.Thread(target = handleUnixAcceptor, args = (unixAcceptorSocket, ))
 #  unixAcceptorHandler.daemon = True
@@ -206,7 +207,8 @@ def daemon(daemonSpawnLock):
 #  inetBroadcastHandler.daemon = True
   inetBroadcastHandler.start()
 
-  for t in [initialCommandExecutor,
+  for t in [
+#            initialCommandExecutor,
             unixAcceptorHandler,
             inetAcceptorHandler,
             inetBroadcastHandler]:

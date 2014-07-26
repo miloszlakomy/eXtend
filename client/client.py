@@ -101,7 +101,7 @@ class MessageBuffer(object):
 
 class EXtendClient(object):
     def __init__(self, vnc_command):
-        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+        self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self.tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
         self.connected = False
         self.udp_msg_buffer = MessageBuffer()
@@ -123,6 +123,8 @@ class EXtendClient(object):
 
     def on_udp_socket_ready(self):
         data, address = self.udp_socket.recvfrom(1024)
+
+        print data, address
 
         if not self.connected:
             self.connect((address[0], tcp_connect_port))
