@@ -18,8 +18,8 @@ DEFAULT_MCAST_PORT = int(os.getenv('EXTEND_MCAST_PORT') or 0x7e5d)
 DEFAULT_LOCK_PREFIX = os.getenv('HOME') or '/tmp'
 DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
 
-DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT' # windowed
-#DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT' # fullscreen
+#DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT' # windowed
+DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT' # fullscreen
 
 def parse_int(val):
     if val.startswith('0x'):
@@ -221,9 +221,9 @@ class EXtendClient(object):
         self.vnc_process = subprocess.Popen(cmd)
 
     def set_cursor_pos(self, x, y):
-        #PyMouse().move(x - self.display_offset[0],
-                       #y - self.display_offset[1])
-        PyMouse().move(x, y)
+        PyMouse().move(x - self.display_offset[0],
+                       y - self.display_offset[1])
+        #PyMouse().move(x, y)
 
     def process_message(self, msg, handlers):
         print('message: %s' % msg)
