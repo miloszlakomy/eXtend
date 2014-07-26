@@ -181,11 +181,21 @@ class MouseThread(pymouse.PyMouseEvent):
     global mcastGroup, mcastPort
     self.sock = setupMulticastSocket(mcastGroup, mcastPort)
 
-  def move(self, x, y):
+  def sendCoords(self, x, y):
     global mcastGroup, mcastPort
 
     msg = struct.pack('!II', x, y)
     self.sock.sendto(msg, (mcastGroup, mcastPort))
+
+  def move(self, x, y):
+    self.sendCoords(x, y)
+
+  def spam(self):
+    pm = pymouse.PyMouse()
+
+    while True:
+      time.sleep(2.5)
+      self.sendCoords(*pm.position())
 
 #def handleInetBroadcast(mcastGroup, mcastPort):
   #sock = setupBroadcastSocket(mcastGroup, mcastPort)
