@@ -150,9 +150,7 @@ class EXtendClient(object):
         if not self.connected:
             self.connect((address[0], tcp_connect_port))
 
-        self.udp_msg_buffer.update(data)
-        for msg in self.udp_msg_buffer:
-            self.process_udp_message(msg)
+        self.process_udp_message(data)
 
     def on_tcp_socket_ready(self):
         data = self.tcp_socket.recv(1024)
@@ -241,6 +239,7 @@ class EXtendClient(object):
             print('invalid message: %s' % msg)
 
     def process_udp_message(self, msg):
+        print(repr(msg))
         x, y = struct.unpack('!II', msg)
         self.set_cursor_pos(x, y)
 
