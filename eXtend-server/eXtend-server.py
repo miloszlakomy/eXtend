@@ -27,11 +27,12 @@ parser.add_argument('-p', '--port', type = lambda x: int(x, 0))
 parser.add_argument('-s', '--start', action = 'store_true')
 parser.add_argument('-S', '--stop', action = 'store_true')
 parser.add_argument('-P', '--password-file')
+parser.add_argument('-m', '--manual-arrange', action = 'store_true')
+parser.add_argument('-l', '--log-file')
 
 # there's a second "if __name__ == '__main__':" at the end of this file
 if __name__ == '__main__':
   parsedArgs = parser.parse_args()
-
 else:
   parsedArgs = parser.parse_args(None)
 
@@ -61,6 +62,14 @@ else:
     fd = os.open(vncPasswordFile, os.O_WRONLY | os.O_CREAT, 0600)
     os.write(fd, 'lubieplacki')
     os.close(fd)
+
+manualArrange = parsedArgs.manual_arrange
+
+logFile = (
+  os.path.expanduser(parsedArgs.log_file) if
+  parsedArgs.log_file != None else
+  os.path.expanduser('~/.' + daemonProcessName + '.log')
+)
 
 
 def processRunning(name):
@@ -96,8 +105,19 @@ def executeCommand(parsedArgs):
   errorMessage = 'success'
 
   result = None
-  if parsedArgs['stop']: suicide()
-  if parsedArgs['start']: result = startInetSockets()
+
+  if parsedArgs['stop']:
+    suicide()
+
+  if parsedArgs['start']:
+    result = startInetSockets()
+
+  if parsedArgs['password_file'] != None:
+    global vncPasswordFile
+    vncPasswordFile = parsedArgs['password_file']
+
+  global manualArrange
+  manualArrange = parsedArgs['manual_arrange']
 
   if result != None:
     returnCode, errorMessage = result
@@ -155,7 +175,7 @@ def handleInetClient(inetServerSocket):
     stdout = subprocess.PIPE)
 
 #  sp = subprocess.Popen('../eXtend_alpha_server %s %s $DISPLAY' % (resolution.split()[1], resolution.split()[2]), shell=True) #TODO
-#  time.sleep(5) #TODO
+  time.sleep(5) #TODO
 
   vncPort = ''
   while vncPort[:5] != 'PORT=':
@@ -265,6 +285,12 @@ def spawnDaemon(func, args):
 def daemon(daemonSpawnLock):
   setproctitle.setproctitle(daemonProcessName)
   print 'starting eXtend-server daemon'
+
+  for i in [1, 2]:
+    os.close(i)
+    os.open(logFile, os.O_CREAT | os.O_WRONLY | os.O_APPEND)
+
+  print '\n' + '#' * 50 + '\n'
 
   if os.path.exists(unixSocketPath):
     if stat.S_ISSOCK(os.stat(unixSocketPath).st_mode):
