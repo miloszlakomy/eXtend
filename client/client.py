@@ -201,7 +201,11 @@ class EXtendClient(object):
     def vnc_stop(self):
         if self.vnc_process:
             print('stopping vnc client')
-            self.vnc_process.terminate()
+            try:
+                self.vnc_process.terminate()
+            except:
+                print('cannot terminate VNC client')
+
             self.vnc_process = None
 
     def vnc_start(self, vnc_host, vnc_port, offset_x, offset_y):
