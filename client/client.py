@@ -18,7 +18,7 @@ DEFAULT_LOCK_PREFIX = os.getenv('HOME') or '/tmp'
 DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
 
 #DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT' # windowed
-DEFAULT_VNCCLIENT_CMD = 'cat PASSWD | vncviewer -fullscreen -viewonly HOST::PORT -autopass' # fullscreen
+DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT -autopass' # fullscreen
 
 parser = argparse.ArgumentParser(description='eXtend client daemon.')
 parser.add_argument('-g', '--multicast-group',
@@ -57,10 +57,9 @@ parser.add_argument('-v', '--vnc-client-cmd',
                     dest='vnc_client_cmd',
                     default=DEFAULT_VNCCLIENT_CMD,
                     help='set a shell command used to spawn VNC client. The '
-                         'HOST and PORT and PASS substrings will be replaced '
-                         'with the IP and port and password used to connect '
-                         'to the VNC server. Default: `%s`'
-                         % DEFAULT_VNCCLIENT_CMD)
+                         'HOST and PORT substrings will be replaced with the '
+                         'IP and port used to connect to the VNC server. '
+                         'Default: `%s`' % DEFAULT_VNCCLIENT_CMD)
 parser.add_argument('-w', '--vnc-passwd-file',
                     action='store',
                     dest='vnc_password_file',
@@ -207,14 +206,16 @@ class EXtendClient(object):
 
     def vnc_start(self, vnc_host, vnc_port, offset_x, offset_y):
         cmd = (self.vnc_command.replace('HOST', vnc_host)
-                               .replace('PORT', vnc_port)
-                               .replace('PASSWD', self.vnc_password_file).split())
+                               .replace('PORT', vnc_port)).split()
 
         print('starting vnc viewer (%s)' % cmd)
         self.display_offset = (int(offset_x), int(offset_y))
 
         self.vnc_stop()
-        self.vnc_process = subprocess.Popen(cmd)
+        self.vnc_process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+
+        with open(self.vnc_password_file) as f:
+            self.vnc_process.communicate(f.read())
 
     def set_cursor_pos(self, x, y):
         PyMouse().move(x - self.display_offset[0],
