@@ -51,7 +51,7 @@ unixClientSocketConnectTimeout = 5
 
 inetSocketsStarted = False
 
-vncCmd = 'x11vnc -q'
+vncCmd = 'x11vnc'
 
 if parsedArgs.password_file:
   vncPasswordFile = parsedArgs.password_file
@@ -147,11 +147,25 @@ def handleInetClient(inetServerSocket):
   xrandr('--addmode VIRTUAL%d %s' % (outputNum, modename))
   xrandr('--output VIRTUAL%d --mode %s --pos %dx0' % (outputNum, modename, screensize[0]))
 
-  sp = subprocess.Popen('%s -clip %dx%d+%d+0 --passwdfile %s -viewonly' % (vncCmd, resolution[0], resolution[1], screensize[0], vncPasswordFile), shell=True)
+  sp = subprocess.Popen([
+    vncCmd,
+    '-clip', '%dx%d+%d+0' % (resolution[0], resolution[1], screensize[0]),
+    '--passwdfile', vncPasswordFile,
+    '-viewonly', '-q'],
+    stdout = subprocess.PIPE)
 
 #  sp = subprocess.Popen('../eXtend_alpha_server %s %s $DISPLAY' % (resolution.split()[1], resolution.split()[2]), shell=True) #TODO
-  time.sleep(5) #TODO
-  f.write('vnc %s 5900 %d 0\n' % (inetServerSocket.getsockname()[0], screensize[0])) #TODO
+#  time.sleep(5) #TODO
+
+  vncPort = ''
+  while vncPort[:5] != 'PORT=':
+    vncPort = sp.stdout.readline()
+
+  print vncPort
+
+  vncPort = int(vncPort[5:-1])
+
+  f.write('vnc %s %d %d 0\n' % (inetServerSocket.getsockname()[0], vncPort, screensize[0])) #TODO
 
   f.close()
 
