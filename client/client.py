@@ -17,7 +17,7 @@ DEFAULT_MCAST_GROUP = os.getenv('EXTEND_MCAST_GROUP') or '224.0.126.93'
 DEFAULT_LOCK_PREFIX = os.getenv('HOME') or '/tmp'
 DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
 
-#DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT' # windowed
+#DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT -autopass' # windowed
 DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT -autopass' # fullscreen
 
 parser = argparse.ArgumentParser(description='eXtend client daemon.')
@@ -219,7 +219,8 @@ class EXtendClient(object):
         self.vnc_process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
         with open(self.vnc_password_file) as f:
-            self.vnc_process.communicate(f.read())
+            self.vnc_process.stdin.write(f.read() + '\n')
+            self.vnc_process.stdin.flush()
 
     def set_cursor_pos(self, x, y):
         PyMouse().move(x - self.display_offset[0],
