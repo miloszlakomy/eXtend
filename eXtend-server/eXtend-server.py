@@ -53,11 +53,14 @@ inetSocketsStarted = False
 
 vncCmd = 'x11vnc -q'
 
-vncPasswordFile = parsedArgs.password_file if parsedArgs.password_file else os.path.expanduser('~/.eXtend_vncPwd')
-if not os.path.exists(vncPasswordFile):
-  fd = os.open(vncPasswordFile, os.O_WRONLY | os.O_CREAT, 0600)
-  os.write(fd, 'lubieplacki')
-  os.close(fd)
+if parsedArgs.password_file:
+  vncPasswordFile = parsedArgs.password_file
+else:
+  vncPasswordFile = os.path.expanduser('~/.eXtend_vncPwd')
+  if not os.path.exists(vncPasswordFile):
+    fd = os.open(vncPasswordFile, os.O_WRONLY | os.O_CREAT, 0600)
+    os.write(fd, 'lubieplacki')
+    os.close(fd)
 
 
 def processRunning(name):
@@ -144,7 +147,7 @@ def handleInetClient(inetServerSocket):
   xrandr('--addmode VIRTUAL%d %s' % (outputNum, modename))
   xrandr('--output VIRTUAL%d --mode %s --pos %dx0' % (outputNum, modename, screensize[0]))
 
-  sp = subprocess.Popen('%s -clip %dx%d+%d+0' % (vncCmd, resolution[0], resolution[1], screensize[0]), shell=True)
+  sp = subprocess.Popen('%s -clip %dx%d+%d+0 --passwdfile %s -viewonly' % (vncCmd, resolution[0], resolution[1], screensize[0], vncPasswordFile), shell=True)
 
 #  sp = subprocess.Popen('../eXtend_alpha_server %s %s $DISPLAY' % (resolution.split()[1], resolution.split()[2]), shell=True) #TODO
   time.sleep(5) #TODO
