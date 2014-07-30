@@ -82,6 +82,7 @@ def formatResult(result):
   return reduce(lambda x, y: str(x) + ' : ' + str(y), result)
 
 def suicide():
+  print 'commiting suicide...\n'
   os.kill(os.getpid(), 1)
 
 def startInetSockets():
@@ -145,16 +146,7 @@ def handleUnixAcceptor(unixAcceptorSocket):
 #    unixClientHandler.daemon = True
     unixClientHandler.start()
 
-def handleInetClient(inetServerSocket):
-  f = inetServerSocket.makefile()
-
-  resolution = f.readline().split()
-
-  print resolution
-
-  assert resolution[0] == 'resolution'
-  resolution = map(int, resolution[1:])
-
+def initVirtualOutputAndVnc(resolution):
   modename, modeline = cvt(resolution[0], resolution[1])
 
   screensize, outputs = parse_xrandr()
@@ -165,7 +157,9 @@ def handleInetClient(inetServerSocket):
   xrandr = lambda cmd = '': runAndWait('xrandr ' + cmd)
   xrandr('--newmode %s' % modeline)
   xrandr('--addmode VIRTUAL%d %s' % (outputNum, modename))
+  time.sleep(1) #TODO investigate
   xrandr('--output VIRTUAL%d --mode %s --pos %dx0' % (outputNum, modename, screensize[0]))
+  time.sleep(1) #TODO investigate
 
   sp = subprocess.Popen([
     vncCmd,
@@ -185,7 +179,21 @@ def handleInetClient(inetServerSocket):
 
   vncPort = int(vncPort[5:-1])
 
-  f.write('vnc %s %d %d 0\n' % (inetServerSocket.getsockname()[0], vncPort, screensize[0])) #TODO
+  return sp, vncPort, screensize
+
+def handleInetClient(inetServerSocket):
+  f = inetServerSocket.makefile()
+
+  resolution = f.readline().split()
+
+  print resolution
+
+  assert resolution[0] == 'resolution'
+  resolution = map(int, resolution[1:])
+
+  sp, vncPort, screensize = initVirtualOutputAndVnc(resolution)
+
+  f.write('vnc %s %d %d 0\n' % (inetServerSocket.getsockname()[0], vncPort, screensize[0]))
 
   f.close()
 
