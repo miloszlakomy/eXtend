@@ -77,8 +77,6 @@ class WebClient(object):
             ws_print_debug('[%s] << %s' % (self, resp))
             self.sock.send(resp + '\n')
 
-    
-
     def _handle_message(self, msg):
         ws_print_debug('[%s] >> %s' % (self, msg.strip()))
 
@@ -212,7 +210,7 @@ class WebServerThread(threading.Thread):
     def _handle_sockets(self):
         waitables = [ self.server_sock ] + self.clients
         read, _, fail = select.select(waitables, [], waitables)
-        
+
         for ready in read:
             if self.server_sock is ready:
                 self._handle_new_client()
