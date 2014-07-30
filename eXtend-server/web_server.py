@@ -9,6 +9,8 @@ import message_buffer
 import collections
 import time
 import traceback
+import vnc
+import guacamole
 
 LOGIN_URL = '/guacamole/login'
 LOGIN_USER = 'inz'
@@ -34,6 +36,7 @@ class WebClient(object):
 
         self.id = None
         self.resolution = None
+        self.output = None
 
     def handle_reconnect(self, old_self):
         ws_print('client %s reconnected (was %s)' % (self, old_self))
@@ -63,6 +66,9 @@ class WebClient(object):
         self.sock.close()
         self.id = None
 
+        if self.output:
+            self.output.cleanup()
+
     def send(self, commands):
         if not isinstance(commands, list):
             commands = [ commands ]
@@ -89,7 +95,10 @@ class WebClient(object):
 
     def _init_guacamole(self):
         ws_print('init guacamole')
-        self.id = 0 # TODO
+        self.output = vnc.initVirtualOutputAndVNC(self.resolution)
+
+        config = guacamole.Config('/etc/guacamole/user-mapping.xml')
+        self.id = config.get_connection_name(self.vncPort)
 
     def _make_guacamole_url(self):
         return '/guacamole/client.xhtml?id=c%2F' + str(self.id)
@@ -235,6 +244,8 @@ class WebServerThread(threading.Thread):
                     pass
             finally:
                 self.server_sock.close()
+                for client in self.clients:
+                    client.kill()
                 self.clients = []
                 self.zombies = []
         finally:
