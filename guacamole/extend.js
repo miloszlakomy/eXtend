@@ -1,26 +1,9 @@
 window.eXtend = (function() {
     'use strict';
 
-    var eXtend = function(port) {
-        var extend = this;
-
-        $(function() {
-            extend.$status = $('#extend-status');
-            extend.$id = $('#extend-id-container');
-            extend.$guac = $('#extend-guacamole');
-
-            extend.statusMsg('document loaded');
-
-            $('body').click(function() {
-                var elem = document.getElementById('extend-container');
-                var req = elem.requestFullScreen
-                      || elem.webkitRequestFullScreen
-                      || elem.mozRequestFullScreen;
-                req.call(elem);
-            });
-
-            extend.connect(port);
-        });
+    var statusMsg = function(msg) {
+        var $status = $('#extend-status');
+        $status.html($status.html() + '<br/>' + msg);
     };
 
     var getArgs = function(href) {
@@ -42,42 +25,53 @@ window.eXtend = (function() {
         return args;
     }
 
-    eXtend.prototype = {
-        statusMsg: function(msg) {
-            this.$status.html(this.$status.html() + '<br/>' + msg);
-        },
+    var Guacamole = function() {};
 
-        loginToGuacamole: function(url, login, pass) {
-            var extend = this;
+    Guacamole.prototype = {
+        login: function(url, login, pass) {
             var data = {
                 'username': login,
                 'password': pass
             };
 
             $.post(url, data, function() {
-                extend.statusMsg('login successful');
+                statusMsg('login successful');
             }, function(evt) {
-                extend.statusMsg('login error: ' + evt);
+                statusMsg('login error: ' + evt);
             });
         },
 
-        startGuacamole: function(url) {
-            var extend = this;
+        start: function(id, url) {
             var args = getArgs();
 
             if (!('id' in args)) {
                 $.extend(args, getArgs(url));
-                args['extend_id'] = extend.$id.text();
-                extend.statusMsg('args: ' + $.param(args));
+                args['extend_id'] = id;
+                statusMsg('args: ' + $.param(args));
+
                 window.location.search = $.param(args);
             }
+
+            this._load(url);
+            $('#extend-status').hide();
+            $('#extend-id-container').hide();
+        },
+
+        stop: function() {
+            $('.extend-guacamole-node').remove();
+            $('#extend-status').show();
+        },
+
+        _load: function(url) {
+            var guac = this;
+            statusMsg('loading ' + url);
 
             $.get(url, function(xml) {
                 var $xml = $(xml);
                 var $scripts = [];
                 var $styles = [];
 
-                extend.statusMsg('appending guacamole');
+                statusMsg('appending guacamole');
                 $xml.find('head').children().each(function() {
                     var $this = $(this);
                     if ($this.is('link')
@@ -95,102 +89,137 @@ window.eXtend = (function() {
                     }
                 });
 
-                extend.processScriptNodes($scripts, 0);
+                try {
+                    console.log('start');
+                    guac._processScriptNodes($scripts, 0);
+                    console.log('done');
+                } catch (e) {
+                    statusMsg(e);
+                    guac.stop();
+                }
             });
         },
 
-        processScriptNodes: function($scripts, startIndex) {
-            var extend = this;
+        _processScriptNodes: function($scripts, startIndex) {
+            var guac = this;
 
             for (var i = startIndex; i < $scripts.length; ++i) {
-                extend.statusMsg('processing script ' + i + '/' + $scripts.length);
+                statusMsg('processing script ' + i + '/' + $scripts.length);
 
-                var $extend = $scripts[i];
-                var srcUrl = $extend.attr('src');
+                var $script = $scripts[i];
+                var srcUrl = $script.attr('src');
 
                 if (srcUrl !== undefined) {
-                    extend.statusMsg('executing script: ' + srcUrl);
+                    statusMsg('executing script: ' + srcUrl);
                     $.getScript(srcUrl, function() {
-                        extend.processScriptNodes($scripts, i + 1);
+                        guac._processScriptNodes($scripts, i + 1);
                     });
                     return;
                 }
 
-                var code = $extend.html();
+                var code = $script.html();
                 if (code) {
-                    extend.statusMsg('executing inline javascript');
+                    statusMsg('executing inline javascript');
                     $.globalEval(code);
                 }
             }
 
             if (window.onload) {
-                extend.statusMsg('executing window.onload event');
+                statusMsg('executing window.onload event');
                 window.onload();
             }
 
-            extend.statusMsg('done with scripts');
+            statusMsg('done with scripts');
+        }
+    };
+
+    var eXtend = function(port) {
+        var extend = this;
+
+        this.guacamole = new Guacamole();
+
+        $(function() {
+            statusMsg('document loaded');
+
+            $('body').click(function() {
+                var elem = document.getElementById('extend-container');
+                var req = elem.requestFullScreen
+                      || elem.webkitRequestFullScreen
+                      || elem.mozRequestFullScreen;
+                req.call(elem);
+            });
+
+            extend.connect(port);
+        });
+    };
+
+    eXtend.prototype = {
+        _reconnect: function(id) {
+            statusMsg('reconnecting, id = ' + id);
+            this.sock.send('reconnect ' + id + '\n');
         },
 
-        stopGuacamole: function() {
-            this.$guac.empty();
-            this.$id.show();
-            this.$status.show();
+        _init: function() {
+            var w = window.screen.width;
+            var h = window.screen.height;
+
+            statusMsg('connecting, resolution = ' + w + 'x' + h);
+            this.sock.send('connect ' + w + ' ' + h + '\n');
         },
 
         connect: function(port) {
             var extend = this;
+
             this.serverUrl = 'ws://' + document.domain + ':' + port;
-            this.statusMsg('connecting to ' + this.serverUrl);
+            statusMsg('connecting to ' + this.serverUrl);
 
             this.sock = new WebSocket(this.serverUrl);
             this.sock.onopen = function() {
-                var w = window.screen.width;
-                var h = window.screen.height;
                 var args = getArgs();
 
-                extend.statusMsg('args:');
+                statusMsg('args:');
                 for (var key in args) {
-                    extend.statusMsg('- ' + key + ': ' + args[key]);
+                    statusMsg('- ' + key + ': ' + args[key]);
                 }
                     
                 if ('extend_id' in args) {
-                    extend.statusMsg('renewing ID: ' + args.extend_id);
-                    extend.sock.send('id ' + args.extend_id + '\n');
+                    extend._reconnect(args.extend_id);
                 } else {
-                    extend.statusMsg('waiting for ID')
-                    extend.sock.send('get-id\n');
+                    extend._init();
                 }
+            };
 
-                extend.statusMsg('sending resolution info (' + w + 'x' + h + ')')
-                extend.sock.send('resolution ' + w + ' ' + h + '\n')
-            }
             this.sock.onclose = function(evt) {
-                extend.statusMsg('socket closed, code: ' + evt.code + ', reason: ' + evt.reason);
-                extend.stopGuacamole();
+                statusMsg('socket closed, code: ' + evt.code + ', reason: ' + evt.reason);
+                extend.guacamole.stop();
+                window.history.pushState(null, 'eXtend web client', '/');
                 //setTimeout(1000, function() { extend.connect(port) });
-            }
+            };
+
             this.sock.onmessage = function(msg) {
-                var argv = msg.data.split(' ');
+                var argv = msg.data.trim().split(' ');
                 switch (argv[0]) {
-                case 'id':
-                    extend.statusMsg('got id: ' + argv[1]);
-                    extend.$id.text(argv[1]).show();
+                case 'display':
+                    var args = getArgs();
+
+                    statusMsg('got id: ' + argv[1]);
+                    $('#extend-id-container').text(argv[1]).show();
+
+                    statusMsg('displaying ' + argv[2]);
+                    extend.guacamole.start(argv[1], argv[2]);
                     break;
                 case 'login':
-                    extend.statusMsg('logging in');
-                    extend.loginToGuacamole(argv[1], argv[2], argv[3]);
-                    break;
-                case 'display':
-                    extend.statusMsg('displaying ' + argv[1]);
-                    extend.startGuacamole(argv[1]);
+                    statusMsg('logging in');
+                    extend.guacamole.login(argv[1], argv[2], argv[3]);
                     break;
                 default:
-                    extend.statusMsg('unknown message: ' + msg);
+                    statusMsg('unknown message: ' + msg.data);
                     break;
                 }
-            }
-        }
+            };
+        },
     };
 
     return new eXtend(4242);
 })();
+

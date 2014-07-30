@@ -93,6 +93,9 @@ class Websocket(socket.socket):
     def close(self, *args, **kwargs):
         return self._socket.close(*args, **kwargs)
 
+    def fileno(self, *args, **kwargs):
+        return self._socket.fileno(*args, **kwargs)
+
     def _split(self, data):
         ret = []
         i = 0
@@ -241,9 +244,9 @@ Sec-WebSocket-Accept: %s
                          + ServerWebsocket.HANDSHAKE_MAGIC_STRING).digest())
 
     def _process_handshake_line(self, line):
-        if not line:
+        if self._client_key and not line:
             self._socket.send(ServerWebsocket.HANDSHAKE_MSG_FORMAT
-                             % self._gen_accept_key())
+                              % self._gen_accept_key())
             self._handshake_completed = True
             ws_debug_print('handshake completed')
             return
