@@ -25,6 +25,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-p', '--port', type = lambda x: int(x, 0))
 parser.add_argument('-s', '--start', action = 'store_true')
 parser.add_argument('-S', '--stop', action = 'store_true')
+parser.add_argument('-o', '--port-web', type = lambda x: int(x, 0))
+parser.add_argument('-w', '--start-web', action = 'store_true')
 parser.add_argument('-P', '--password-file')
 parser.add_argument('-m', '--manual-arrange', action = 'store_true')
 parser.add_argument('-l', '--log-file')
@@ -102,6 +104,10 @@ def executeCommand(parsedArgs):
 
   if parsedArgs['start']:
     result = startInetSockets()
+
+  if parsedArgs['start-web']:
+    import web_server
+    web_server.start_server('', parsedArgs['start-web'] or (initSocketPort + 1))
 
   if parsedArgs['password_file'] != None:
     vnc.initPasswordFile(parsedArgs['password_file'])
