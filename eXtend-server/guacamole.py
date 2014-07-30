@@ -86,7 +86,7 @@ if __name__ == '__main__':
     if len(sys.argv) < 2 or sys.argv[1] != 'get':
         print_usage()
         sys.exit(1)
-        
+
     try:
         port = int(sys.argv[2])
     except ValueError:
