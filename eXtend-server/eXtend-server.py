@@ -19,6 +19,7 @@ import threading
 
 import pymouse
 import setproctitle
+import vnc
 
 
 parser = argparse.ArgumentParser()
@@ -146,41 +147,6 @@ def handleUnixAcceptor(unixAcceptorSocket):
 #    unixClientHandler.daemon = True
     unixClientHandler.start()
 
-def initVirtualOutputAndVnc(resolution):
-  modename, modeline = cvt(resolution[0], resolution[1])
-
-  screensize, outputs = parse_xrandr()
-
-  outputNum = 1
-  while outputs['VIRTUAL%d' % outputNum]['coords'] != None: outputNum += 1
-
-  xrandr = lambda cmd = '': runAndWait('xrandr ' + cmd)
-  xrandr('--newmode %s' % modeline)
-  xrandr('--addmode VIRTUAL%d %s' % (outputNum, modename))
-  time.sleep(1) #TODO investigate
-  xrandr('--output VIRTUAL%d --mode %s --pos %dx0' % (outputNum, modename, screensize[0]))
-  time.sleep(1) #TODO investigate
-
-  sp = subprocess.Popen([
-    vncCmd,
-    '-clip', '%dx%d+%d+0' % (resolution[0], resolution[1], screensize[0]),
-    '--passwdfile', vncPasswordFile,
-    '-viewonly', '-q'],
-    stdout = subprocess.PIPE)
-
-#  sp = subprocess.Popen('../eXtend_alpha_server %s %s $DISPLAY' % (resolution.split()[1], resolution.split()[2]), shell=True) #TODO
-  time.sleep(5) #TODO
-
-  vncPort = ''
-  while vncPort[:5] != 'PORT=':
-    vncPort = sp.stdout.readline()
-
-  print vncPort
-
-  vncPort = int(vncPort[5:-1])
-
-  return sp, vncPort, screensize
-
 def handleInetClient(inetServerSocket):
   f = inetServerSocket.makefile()
 
@@ -191,16 +157,12 @@ def handleInetClient(inetServerSocket):
   assert resolution[0] == 'resolution'
   resolution = map(int, resolution[1:])
 
-  sp, vncPort, screensize = initVirtualOutputAndVnc(resolution)
+  output = vnc.initVirtualOutputAndVNC(resolution)
 
-  f.write('vnc %s %d %d 0\n' % (inetServerSocket.getsockname()[0], vncPort, screensize[0]))
-
+  f.write('vnc %s %d %d 0\n' % (inetServerSocket.getsockname()[0], output.vncPort, screensize[0]))
   f.close()
 
-  sp.wait()
-
-  xrandr('--output VIRTUAL%d --off' % outputNum)
-
+  output.cleanup()
   inetServerSocket.close()
 
 def handleInetAcceptor():
