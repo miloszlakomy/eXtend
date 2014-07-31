@@ -18,8 +18,15 @@ LOGIN_PASS = 'inz'
 
 DEBUG = True
 
-def ws_print(text):
-    print('WebServer: ' + text)
+def ws_print(*args):
+    HEADER = 'WebServer: '
+
+    def decorate(x):
+        if isinstance(x, Exception):
+            x = traceback.format_exc(x).strip()
+        return HEADER + ('\n' + HEADER).join(x.split('\n'))
+
+    print('\n'.join(decorate(x) for x in args))
 
 def ws_print_debug(text):
     if DEBUG:
@@ -87,7 +94,7 @@ class WebClient(object):
             try:
                 return handler(self, *args[1:])
             except TypeError as e:
-                ws_print('ignoring invalid message: "%s" (%s)' % (msg, e[0]))
+                ws_print('ignoring invalid message: "%s", reason:' % msg, e)
         else:
             ws_print('client %s self an unexpected message: %s' % (self, msg))
 
@@ -203,8 +210,7 @@ class WebServerThread(threading.Thread):
             except SocketClosed:
                 self._handle_client_disconnect(client)
         except Exception as e:
-            ws_print(traceback.format_exc().strip())
-            ws_print('removing client because of error')
+            ws_print('removing client because of error', e)
             self.clients.remove(client)
 
     def _clean_zombies(self):
