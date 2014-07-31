@@ -17,6 +17,8 @@ def ws_debug_print(*args, **kwargs):
     if WS_DEBUG:
         print(*args, **kwargs)
 
+class HandshakeFailed(Exception): pass
+
 class StructStream(object):
     def __init__(self, buf):
         self.buf = buf
@@ -212,7 +214,11 @@ Sec-WebSocket-Accept: %s
 
         self._handshake_completed = False
         self._client_key = None
-        self._do_handshake()
+
+        try:
+            self._do_handshake()
+        except Exception as e:
+            raise HandshakeFailed(repr(e))
 
     def send(self, data):
         debug_print('<< %s' % data)
