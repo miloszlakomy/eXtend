@@ -28,17 +28,13 @@ window.eXtend = (function() {
     var Guacamole = function() {};
 
     Guacamole.prototype = {
-        login: function(url, login, pass) {
-            var data = {
+        reauth: function(logoutUrl, loginUrl, login, pass) {
+            this.logoutUrl = logoutUrl;
+            this.loginUrl = loginUrl;
+            this.loginData = {
                 'username': login,
                 'password': pass
             };
-
-            $.post(url, data, function() {
-                statusMsg('login successful');
-            }, function(evt) {
-                statusMsg('login error: ' + evt);
-            });
         },
 
         start: function(id, url) {
@@ -49,13 +45,23 @@ window.eXtend = (function() {
                 args['extend_id'] = id;
                 statusMsg('args: ' + $.param(args));
 
-                this.sock.close();
-                window.location.search = $.param(args);
+                return $.param(args);
             }
 
-            this._load(url);
-            $('#extend-status').hide();
-            $('#extend-id-container').hide();
+            statusMsg('starting; loginUrl = ' + this.loginUrl
+                      + ', logoutUrl = ' + this.logoutUrl);
+
+            var guacamole = this;
+            $.get(guacamole.logoutUrl)
+                .done(function() {
+                    statusMsg('logging in');
+                    $.post(guacamole.loginUrl, guacamole.loginData)
+                        .done(function() {
+                            guacamole._load(url);
+                            $('#extend-status').hide();
+                            $('#extend-id-container').hide();
+                    });
+                 });
         },
 
         stop: function() {
@@ -207,11 +213,14 @@ window.eXtend = (function() {
                     $('#extend-id-container').text(argv[1]).show();
 
                     statusMsg('displaying ' + argv[2]);
-                    extend.guacamole.start(argv[1], argv[2]);
+                    var newUrl = extend.guacamole.start(argv[1], argv[2]);
+                    if (newUrl) {
+                        extend.sock.close();
+                        window.location.search = newUrl;
+                    }
                     break;
-                case 'login':
-                    statusMsg('logging in');
-                    extend.guacamole.login(argv[1], argv[2], argv[3]);
+                case 'reauth':
+                    extend.guacamole.reauth(argv[1], argv[2], argv[3], argv[4]);
                     break;
                 default:
                     statusMsg('unknown message: ' + msg.data);

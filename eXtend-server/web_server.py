@@ -12,6 +12,7 @@ import traceback
 import vnc
 import guacamole
 
+LOGOUT_URL = '/guacamole/logout'
 LOGIN_URL = '/guacamole/login'
 LOGIN_USER = 'inz'
 LOGIN_PASS = 'inz'
@@ -44,15 +45,6 @@ class WebClient(object):
         self.id = None
         self.resolution = None
         self.output = None
-
-    def handle_reconnect(self, old_self):
-        ws_print('client %s reconnected (was %s)' % (self, old_self))
-
-        self.addr = old_self.addr
-        self.id = old_self.id
-        self.resolution = old_self.resolution
-
-        self.send('display %s %s' % (self.id, self._make_guacamole_url()))
 
     def fileno(self):
         """ makes it possible to use WebClient instances in select() calls """
@@ -102,8 +94,13 @@ class WebClient(object):
         ws_print('init guacamole')
         self.output = vnc.initVirtualOutputAndVNC(self.resolution)
 
+        vnc_pass = open(vnc.passwordFile).readline().strip('\n') if vnc.passwordFile else ''
         config = guacamole.Config('/etc/guacamole/user-mapping.xml')
-        self.id = config.get_connection_name(self.output.vncPort)
+        self.id = config.get_connection_name(self.output.vncPort,
+                                             password=vnc_pass,
+                                             auto_create=True)
+        ws_print('assigned id = %s for VNC at port %d (password = %s)'
+                 % (self.id, self.output.vncPort, vnc_pass))
 
     def _make_guacamole_url(self):
         return '/guacamole/client.xhtml?id=c%2F' + str(self.id)
@@ -115,14 +112,28 @@ class WebClient(object):
             return '<%s:%d>' % self.addr
 
     # expected message flow:
-    #      CLIENT                     SERVER
+    #  .-- CLIENT ---.      .------------------ SERVER ------------------,
     #  connect <w> <h>  -->
-    #                       login <url> <login> <pass>
-    #                            <setup guacamole>
-    #                  <--      display <id> <url>
+    #                                      <setup guacamole>
+    #                  <--                 display <id> <url>
     #  <refresh page>
     #  reconnect <id>  -->
-    #                           display <id> <url>
+    #                       reauth <logout_url> <login_url> <login> <pass>
+    #                                      display <id> <url>
+    def handle_reconnect(self, old_self):
+        ws_print('client %s reconnected (was %s)' % (self, old_self))
+
+        self.addr = old_self.addr
+        self.id = old_self.id
+        self.resolution = old_self.resolution
+
+        # logout is needed to make sure loaded user-mapping.xml is up-to-date
+        # otherwise VNC connections with password may not work, since guacamole
+        # seems to read it only at every login attempt.
+        self.send([ 'reauth %s %s %s %s'
+                    % (LOGOUT_URL, LOGIN_URL, LOGIN_USER, LOGIN_PASS),
+                    'display %s %s' % (self.id, self._make_guacamole_url()) ])
+
     def _MSG_connect(self, width, height):
         if not self.id:
             self.resolution = (int(width), int(height))
@@ -130,15 +141,14 @@ class WebClient(object):
         else:
             ws_print('TODO: handle duplicate connect')
 
-        self.send([ 'login %s %s %s' % (LOGIN_URL, LOGIN_USER, LOGIN_PASS),
-                    'display %s %s' % (self.id, self._make_guacamole_url()) ])
+        self.send('display %s %s' % (self.id, self._make_guacamole_url()))
 
     def _MSG_reconnect(self, prev_id):
         if self.id:
             ws_print('received reconnect message, which is only valid on '
                      'uninitialized clients')
         else:
-            raise ClientReconnected(int(prev_id))
+            raise ClientReconnected(prev_id)
 
 class WebServerThread(threading.Thread):
     class Zombie(object):
@@ -203,7 +213,7 @@ class WebServerThread(threading.Thread):
 
     def _handle_client_disconnect(self, client):
         self.zombies.append(WebServerThread.Zombie(client, time.time()))
-        self._remove_client(client)
+        self.clients.remove(client)
         ws_print('client %s disconnected' % client)
 
     def _handle_client_message(self, client):

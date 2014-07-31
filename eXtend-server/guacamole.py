@@ -46,20 +46,37 @@ class Config(object):
                         return node
         return None
 
-    def get_connection_name(self, vnc_port, auto_create=False):
+    def _set_connection_password(self, connection, password):
+        for child in connection.childNodes:
+            if (child.nodeName == 'param'
+                and child.getAttribute('name') == 'password'):
+                    if len(child.childNodes) == 0:
+                        child.appendChild(self.xml.createTextNode(password))
+                        self.dirty = True
+                    elif child.childNodes[0].nodeValue != password:
+                        child.childNodes[0].nodeValue = password
+                        self.dirty = True
+                    return
+
+    def get_connection_name(self, vnc_port, password='', auto_create=False):
         connection = self._find_connection_by_port(vnc_port)
         if not connection:
             if not auto_create:
                 return None
-            connection = self._add_connection(vnc_port)
+            connection = self._add_connection(vnc_port, password)
             print('added connection to port %d' % vnc_port)
+        else:
+            self._set_connection_password(connection, password)
 
-        return connection.getAttribute('name')
+        name = connection.getAttribute('name')
+        if self.dirty:
+            self.save()
+        return name
 
     def _count_connections(self):
         return len(self.xml.getElementsByTagName('connection'))
 
-    def _add_connection(self, vnc_port):
+    def _add_connection(self, vnc_port, password=''):
         if self._find_connection_by_port(vnc_port):
             return
 
@@ -70,7 +87,7 @@ class Config(object):
                 self._create_node('protocol', value='vnc'),
                 self._create_node('param', attrs=[ ('name', 'hostname') ], value='localhost'),
                 self._create_node('param', attrs=[ ('name', 'port') ], value=str(vnc_port)),
-                self._create_node('param', attrs=[ ('name', 'password') ], value=''),
+                self._create_node('param', attrs=[ ('name', 'password') ], value=password),
                 self._create_node('param', attrs=[ ('name', 'read-only') ], value='true'),
             ])
 
