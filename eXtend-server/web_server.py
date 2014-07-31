@@ -125,7 +125,7 @@ class WebClient(object):
     #                           display <id> <url>
     def _MSG_connect(self, width, height):
         if not self.id:
-            self.resolution = (width, height)
+            self.resolution = (int(width), int(height))
             self._init_guacamole()
         else:
             ws_print('TODO: handle duplicate connect')
@@ -161,7 +161,6 @@ class WebServerThread(threading.Thread):
 
     def __init__(self, host, port):
         threading.Thread.__init__(self)
-        self.daemon = True
 
         self.local_addr = (host, port)
         self.server_sock = None
@@ -173,8 +172,13 @@ class WebServerThread(threading.Thread):
         # server.
         self.zombies = [] # disconnected clients that may yet reconnect
 
+    def _remove_client(self, client):
+        client.kill()
+        self.clients.remove(client)
+
     def _handle_new_client(self):
         try:
+            ws_print('handling new cleint')
             sock, addr = self.server_sock.accept()
             ws_print('accepted new web client connection from %s:%d' % addr)
             wrapped_sock = websocket.ServerWebsocket(sock)
@@ -198,7 +202,7 @@ class WebServerThread(threading.Thread):
 
     def _handle_client_disconnect(self, client):
         self.zombies.append(WebServerThread.Zombie(client, time.time()))
-        self.clients.remove(client)
+        self._removeClient(client)
         ws_print('client %s disconnected' % client)
 
     def _handle_client_message(self, client):
@@ -211,14 +215,14 @@ class WebServerThread(threading.Thread):
                 self._handle_client_disconnect(client)
         except Exception as e:
             ws_print('removing client because of error', e)
-            self.clients.remove(client)
+            self._remove_client(client)
 
     def _clean_zombies(self):
         self.zombies = [ z for z in self.zombies if not z.is_dead() ]
 
     def _handle_sockets(self):
         waitables = [ self.server_sock ] + self.clients
-        read, _, fail = select.select(waitables, [], waitables)
+        read, _, fail = select.select(waitables, [], waitables, 1)
 
         for ready in read:
             if self.server_sock is ready:
@@ -249,8 +253,13 @@ class WebServerThread(threading.Thread):
             try:
                 while self._handle_sockets():
                     pass
+            except:
+                # socket == None means that the thread got killed
+                if self.server_sock is not None:
+                    raise
             finally:
-                self.server_sock.close()
+                if self.server_sock:
+                    self.server_sock.close()
                 for client in self.clients:
                     client.kill()
                 self.clients = []
@@ -258,8 +267,16 @@ class WebServerThread(threading.Thread):
         finally:
             ws_print('server thread exiting')
 
-def start_server(host, port, backlog = 5):
-    WebServerThread(host, port).start()
+    def kill(self):
+        server = self.server_sock
+        self.server_sock = None
+        server.close()
+
+def start_server(host, port):
+    server_thread = WebServerThread(host, port)
+    #server_thread.daemon = True
+    server_thread.start()
+    return server_thread
 
 if __name__ == '__main__':
     import sys
@@ -268,7 +285,12 @@ if __name__ == '__main__':
         print('usage: %s <port>' % sys.argv[0])
         sys.exit(1)
 
-    start_server('', int(sys.argv[1]))
-    while True:
-        time.sleep(1)
+    server = start_server('', int(sys.argv[1]))
+    try:
+        while True:
+            time.sleep(1)
+    finally:
+        server.kill()
+        ws_print('waiting for server to exit')
+        server.join()
 
