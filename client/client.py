@@ -11,6 +11,7 @@ import sys
 import argparse
 import struct
 from pymouse import PyMouse
+from message_buffer import MessageBuffer
 
 DEFAULT_PORT = int(os.getenv('EXTEND_PORT') or 0x7e5d)
 DEFAULT_MCAST_GROUP = os.getenv('EXTEND_MCAST_GROUP') or '224.0.126.93'
@@ -84,29 +85,6 @@ def lock():
 
 def unlock():
     os.remove(ARGS.lock_file)
-
-class MessageBuffer(object):
-    def __init__(self):
-        self.messages = []
-        self.data = ''
-
-    def update(self, data):
-        self.data += data
-
-        lines = self.data.split('\n')
-        self.data = lines[-1]
-        self.messages += [ line for line in lines[:-1] ]
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        if not self.messages:
-            raise StopIteration
-
-        ret = self.messages[0]
-        self.messages.pop(0)
-        return ret
 
 class EXtendClient(object):
     def __init__(self, vnc_command, vnc_password_file):
