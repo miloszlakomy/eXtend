@@ -79,7 +79,7 @@ def initVirtualOutputAndVNC(resolution):
 
 def cleanup(virtualOutput):
   if virtualOutput.vncSubprocess:
-    if not virtualOutput.vncSubprocess.poll():
+    if virtualOutput.vncSubprocess.poll() is None:
       virtualOutput.vncSubprocess.terminate()
 
     virtualOutput.vncSubprocess.wait()
