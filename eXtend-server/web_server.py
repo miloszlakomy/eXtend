@@ -52,7 +52,7 @@ class WebClient(object):
         self.id = old_self.id
         self.resolution = old_self.resolution
 
-        self.send('display %d %s' % (self.id, self._make_guacamole_url()))
+        self.send('display %s %s' % (self.id, self._make_guacamole_url()))
 
     def fileno(self):
         """ makes it possible to use WebClient instances in select() calls """
@@ -74,7 +74,7 @@ class WebClient(object):
         self.id = None
 
         if self.output:
-            self.output.cleanup()
+            vnc.cleanup(self.output)
 
     def send(self, commands):
         if not isinstance(commands, list):
@@ -103,7 +103,7 @@ class WebClient(object):
         self.output = vnc.initVirtualOutputAndVNC(self.resolution)
 
         config = guacamole.Config('/etc/guacamole/user-mapping.xml')
-        self.id = config.get_connection_name(self.vncPort)
+        self.id = config.get_connection_name(self.output.vncPort)
 
     def _make_guacamole_url(self):
         return '/guacamole/client.xhtml?id=c%2F' + str(self.id)
@@ -131,7 +131,7 @@ class WebClient(object):
             ws_print('TODO: handle duplicate connect')
 
         self.send([ 'login %s %s %s' % (LOGIN_URL, LOGIN_USER, LOGIN_PASS),
-                    'display %d %s' % (self.id, self._make_guacamole_url()) ])
+                    'display %s %s' % (self.id, self._make_guacamole_url()) ])
 
     def _MSG_reconnect(self, prev_id):
         if self.id:
@@ -187,6 +187,7 @@ class WebServerThread(threading.Thread):
             ws_print('ignoring %s:%d, websocket handshake failed. reason:' % addr, e)
 
     def _find_zombie_by_id(self, id):
+        ws_print('looking for %s in [ %s ]' % (id, ', '.join(str(s) for s in self.zombies)))
         for z in self.zombies:
             if z.client.id == id:
                 return z
@@ -202,7 +203,7 @@ class WebServerThread(threading.Thread):
 
     def _handle_client_disconnect(self, client):
         self.zombies.append(WebServerThread.Zombie(client, time.time()))
-        self._removeClient(client)
+        self._remove_client(client)
         ws_print('client %s disconnected' % client)
 
     def _handle_client_message(self, client):
