@@ -51,16 +51,7 @@ unixClientSocketConnectTimeout = 5
 
 inetSocketsStarted = False
 
-vncCmd = 'x11vnc'
-
-if parsedArgs.password_file:
-  vncPasswordFile = parsedArgs.password_file
-else:
-  vncPasswordFile = os.path.expanduser('~/.eXtend_vncPwd')
-  if not os.path.exists(vncPasswordFile):
-    fd = os.open(vncPasswordFile, os.O_WRONLY | os.O_CREAT, 0600)
-    os.write(fd, 'lubieplacki')
-    os.close(fd)
+vnc.initPasswordFile(parsedArgs.password_file)
 
 manualArrange = parsedArgs.manual_arrange
 
@@ -113,8 +104,7 @@ def executeCommand(parsedArgs):
     result = startInetSockets()
 
   if parsedArgs['password_file'] != None:
-    global vncPasswordFile
-    vncPasswordFile = parsedArgs['password_file']
+    vnc.initPasswordFile(parsedArgs['password_file'])
 
   global manualArrange
   manualArrange = parsedArgs['manual_arrange']
