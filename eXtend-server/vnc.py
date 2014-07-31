@@ -10,11 +10,17 @@ import os
 passwordFile = None
 
 class VirtualOutput(object):
-  def __init__(self, resolution, vncSubprocess, vncPort, virtualOutputNum):
+  def __init__(self,
+               virtualOutputNum,
+               resolution = (0, 0),
+               offset = (0, 0),
+               vncSubprocess = None,
+               vncPort = None):
     self.resolution = resolution
+    self.virtualOutputNum = virtualOutputNum
+    self.offset = offset
     self.vncSubprocess = vncSubprocess
     self.vncPort = vncPort
-    self.virtualOutputNum = virtualOutputNum
 
 def initVirtualOutput(resolution):
   modename, modeline = cvt(resolution[0], resolution[1])
@@ -35,14 +41,14 @@ def initVirtualOutput(resolution):
 
 def initVNC(resolution, screensize):
   args = [ 
-    'x11vnc'
+    'x11vnc',
     '-clip', '%dx%d+%d+0' % (resolution[0], resolution[1], screensize[0]),
     '-viewonly', '-q'
   ]
 
   global passwordFile
   if passwordFile:
-    args += [ '--passwdfile', vncPasswordFile ]
+    args += [ '--passwdfile', passwordFile ]
 
   sp = subprocess.Popen(args, stdout = subprocess.PIPE)
   time.sleep(5) #TODO
@@ -57,15 +63,19 @@ def initVNC(resolution, screensize):
   return sp, vncPort
 
 def initVirtualOutputAndVNC(resolution):
-  outputNum, screenSize = initVirtualOutput(resolution)
+  outputNum, screensize = initVirtualOutput(resolution)
   try:
-    vncSubprocess, vncPort = initVNC(resolution, screenSize)
+    vncSubprocess, vncPort = initVNC(resolution, screensize)
   except:
     print('cannot initialize VNC, cleaning up output %d' % outputNum)
-    cleanup(VirtualOutput(resolution, None, None, outputNum))
+    cleanup(VirtualOutput(virtualOutputNum=outputNum))
     raise
 
-  return VirtualOutput(resolution, vncSubprocess, vncPort, outputNum)
+  return VirtualOutput(resolution=resolution,
+                       virtualOutputNum=outputNum,
+                       offset=(screensize[0], 0),
+                       vncSubprocess=vncSubprocess,
+                       vncPort=vncPort)
 
 def cleanup(virtualOutput):
   if virtualOutput.vncSubprocess:
