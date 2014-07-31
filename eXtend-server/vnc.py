@@ -1,3 +1,9 @@
+from cvt import cvt
+from parse_xrandr import parse_xrandr
+from runAndWait import runAndWait
+
+import time
+import subprocess
 
 class VirtualOutput(object):
   def __init__(self, resolution, vnsSubprocess, vncPort, virtualOutputNum):
