@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-from cvt import cvt
 from runAndWait import runAndWait
-from parse_xrandr import parse_xrandr
 
 import argparse
 import fcntl
