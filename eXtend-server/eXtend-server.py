@@ -150,8 +150,9 @@ def handleInetClient(inetServerSocket):
   try:
     f.write('vnc %s %d %d %d\n' % ((inetServerSocket.getsockname()[0], output.vncPort) +  output.offset))
     f.close()
+    output.vncSubprocess.wait()
   finally:
-    output.cleanup()
+    vnc.cleanup(output)
     inetServerSocket.close()
 
 def handleInetAcceptor():
