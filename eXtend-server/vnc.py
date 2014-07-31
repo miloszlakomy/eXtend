@@ -4,11 +4,15 @@ from runAndWait import runAndWait
 
 import time
 import subprocess
+import traceback
+import os
+
+passwordFile = None
 
 class VirtualOutput(object):
-  def __init__(self, resolution, vnsSubprocess, vncPort, virtualOutputNum):
+  def __init__(self, resolution, vncSubprocess, vncPort, virtualOutputNum):
     self.resolution = resolution
-    self.vnsSubprocess = vnsSubprocess
+    self.vncSubprocess = vncSubprocess
     self.vncPort = vncPort
     self.virtualOutputNum = virtualOutputNum
 
@@ -27,16 +31,20 @@ def initVirtualOutput(resolution):
   xrandr('--output VIRTUAL%d --mode %s --pos %dx0' % (outputNum, modename, screensize[0]))
   time.sleep(1) #TODO investigate
 
-  return outputNum
+  return outputNum, screensize
 
-def initVNC(resolution):
-  sp = subprocess.Popen([
-    vncCmd,
+def initVNC(resolution, screensize):
+  args = [ 
+    'x11vnc'
     '-clip', '%dx%d+%d+0' % (resolution[0], resolution[1], screensize[0]),
-    '--passwdfile', vncPasswordFile,
-    '-viewonly', '-q'],
-    stdout = subprocess.PIPE)
+    '-viewonly', '-q'
+  ]
 
+  global passwordFile
+  if passwordFile:
+    args += [ '--passwdfile', vncPasswordFile ]
+
+  sp = subprocess.Popen(args, stdout = subprocess.PIPE)
   time.sleep(5) #TODO
 
   vncPort = ''
@@ -49,15 +57,35 @@ def initVNC(resolution):
   return sp, vncPort
 
 def initVirtualOutputAndVNC(resolution):
-  outputNum = initVirtualOutput(resolution)
-  vncSubprocess, vncPort = initVNC(resolution)
+  outputNum, screenSize = initVirtualOutput(resolution)
+  try:
+    vncSubprocess, vncPort = initVNC(resolution, screenSize)
+  except:
+    print('cannot initialize VNC, cleaning up output %d' % outputNum)
+    cleanup(VirtualOutput(resolution, None, None, outputNum))
+    raise
 
   return VirtualOutput(resolution, vncSubprocess, vncPort, outputNum)
 
 def cleanup(virtualOutput):
-  if not virtualOutput.vncSubprocess.poll():
-    virtualOutput.vncSubprocess.terminate()
+  if virtualOutput.vncSubprocess:
+    if not virtualOutput.vncSubprocess.poll():
+      virtualOutput.vncSubprocess.terminate()
 
-  virtualOutput.vncSubprocess.wait()
-  xrandr('--output VIRTUAL%d --off' % virtualOutput.virtualOutputNum)
+    virtualOutput.vncSubprocess.wait()
+
+  if virtualOutput.virtualOutputNum is not None:
+    runAndWait('xrandr --output VIRTUAL%d --off' % virtualOutput.virtualOutputNum)
+
+def initPasswordFile(newFile):
+  global passwordFile
+
+  if newFile:
+    passwordFile = newFile
+  else:
+    passwordFile = os.path.expanduser('~/.eXtend_vncPwd')
+    if not os.path.exists(passwordFile):
+      fd = os.open(passwordFile, os.O_WRONLY | os.O_CREAT, 0600)
+      os.write(fd, 'lubieplacki')
+      os.close(fd)
 
