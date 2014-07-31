@@ -48,7 +48,9 @@ def initVNC(resolution, screensize):
 
   global passwordFile
   if passwordFile:
-    args += [ '--passwdfile', passwordFile ]
+    args += [ '-passwdfile', passwordFile ]
+
+  print(args)
 
   sp = subprocess.Popen(args, stdout = subprocess.PIPE)
   time.sleep(5) #TODO
