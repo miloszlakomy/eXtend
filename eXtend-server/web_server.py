@@ -267,10 +267,14 @@ class WebServerThread(threading.Thread):
         finally:
             ws_print('server thread exiting')
 
-    def kill(self):
+    def kill(self, wait = True):
         server = self.server_sock
         self.server_sock = None
         server.close()
+
+        if wait:
+            ws_print('waiting for server to exit')
+            self.join()
 
 def start_server(host, port):
     server_thread = WebServerThread(host, port)
@@ -291,6 +295,4 @@ if __name__ == '__main__':
             time.sleep(1)
     finally:
         server.kill()
-        ws_print('waiting for server to exit')
-        server.join()
 
