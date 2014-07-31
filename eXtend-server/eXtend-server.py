@@ -19,7 +19,6 @@ import pymouse
 import setproctitle
 import vnc
 
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-p', '--port', type = lambda x: int(x, 0))
@@ -51,6 +50,8 @@ unixSocketPath = os.path.expanduser('~/.' + daemonProcessName + '.socket')
 unixSocketBacklog = 128
 unixClientSocketConnectTimeout = 5
 
+websocketServer = None
+
 inetSocketsStarted = False
 
 vnc.initPasswordFile(parsedArgs.password_file)
@@ -75,6 +76,9 @@ def formatResult(result):
 
 def suicide():
   print 'commiting suicide...\n'
+  if websocketServer:
+    websocketServer.kill()
+
   os.kill(os.getpid(), 1)
 
 def startInetSockets():
@@ -107,7 +111,7 @@ def executeCommand(parsedArgs):
 
   if parsedArgs['start-web']:
     import web_server
-    web_server.start_server('', parsedArgs['start-web'] or (initSocketPort + 1))
+    websocketServer = web_server.start_server('', parsedArgs['start-web'] or (initSocketPort + 1))
 
   if parsedArgs['password_file'] != None:
     vnc.initPasswordFile(parsedArgs['password_file'])
