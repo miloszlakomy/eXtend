@@ -170,7 +170,7 @@ class Websocket(socket.socket):
             data = ''.join([ chr(ord(c) ^ ord(mask[i % 4]))
                              for i, c in enumerate(data) ])
 
-        ws_debug_print('unmasked data: ' + data)
+        ws_debug_print('unmasked data: ' + repr(data))
         return data, rest
 
     def unwrap(self, data):
@@ -221,15 +221,16 @@ Sec-WebSocket-Accept: %s
             raise HandshakeFailed(repr(e))
 
     def send(self, data):
-        debug_print('<< %s' % data)
+        debug_print('<< %s' % repr(data))
         Websocket.send(self, self.wrap(data, None))
 
     def recv(self, maxBytes):
         data = Websocket.recv(self, maxBytes)
 
-        if len(data) > Websocket.MIN_FRAME_LENGTH:
+        if len(data) >= Websocket.MIN_FRAME_LENGTH:
+            debug_print('raw data >> %s' % repr(data))
             unwrapped = Websocket.unwrap(self, data)
-            debug_print('>> %s' % unwrapped)
+            debug_print('>> %s' % repr(unwrapped))
             return unwrapped
 
     def _do_handshake(self):

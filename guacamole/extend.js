@@ -49,6 +49,7 @@ window.eXtend = (function() {
                 args['extend_id'] = id;
                 statusMsg('args: ' + $.param(args));
 
+                this.sock.close();
                 window.location.search = $.param(args);
             }
 
@@ -217,7 +218,7 @@ window.eXtend = (function() {
                     break;
                 }
             };
-        },
+        }
     };
 
     return new eXtend(4242);
