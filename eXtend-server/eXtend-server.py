@@ -147,11 +147,12 @@ def handleInetClient(inetServerSocket):
 
   output = vnc.initVirtualOutputAndVNC(resolution)
 
-  f.write('vnc %s %d %d 0\n' % (inetServerSocket.getsockname()[0], output.vncPort, screensize[0]))
-  f.close()
-
-  output.cleanup()
-  inetServerSocket.close()
+  try:
+    f.write('vnc %s %d %d %d\n' % ((inetServerSocket.getsockname()[0], output.vncPort) +  output.offset))
+    f.close()
+  finally:
+    output.cleanup()
+    inetServerSocket.close()
 
 def handleInetAcceptor():
   inetAcceptorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
