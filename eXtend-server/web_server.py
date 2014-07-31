@@ -167,10 +167,13 @@ class WebServerThread(threading.Thread):
         self.zombies = [] # disconnected clients that may yet reconnect
 
     def _handle_new_client(self):
-        sock, addr = self.server_sock.accept()
-        ws_print('accepted new web client connection from %s:%d' % addr)
-        wrapped_sock = websocket.ServerWebsocket(sock)
-        self.clients.append(WebClient(wrapped_sock, addr))
+        try:
+            sock, addr = self.server_sock.accept()
+            ws_print('accepted new web client connection from %s:%d' % addr)
+            wrapped_sock = websocket.ServerWebsocket(sock)
+            self.clients.append(WebClient(wrapped_sock, addr))
+        except websocket.HandshakeFailed as e:
+            ws_print('ignoring %s:%d, websocket handshake failed. reason:' % addr, e)
 
     def _find_zombie_by_id(self, id):
         for z in self.zombies:
