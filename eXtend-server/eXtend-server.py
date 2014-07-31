@@ -109,9 +109,11 @@ def executeCommand(parsedArgs):
   if parsedArgs['start']:
     result = startInetSockets()
 
-  if parsedArgs['start-web']:
+  if parsedArgs['start_web']:
     import web_server
-    websocketServer = web_server.start_server('', parsedArgs['start-web'] or (initSocketPort + 1))
+    print('starting')
+    websocketServer = web_server.start_server('', parsedArgs['port_web'] or (inetSocketPort + 1))
+    print('started')
 
   if parsedArgs['password_file'] != None:
     vnc.initPasswordFile(parsedArgs['password_file'])
