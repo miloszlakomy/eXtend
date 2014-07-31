@@ -62,7 +62,7 @@ class WebClient(object):
             raise SocketClosed
 
     def kill(self):
-        self.sock.close()
+        ws_print('killing client: %s' % self)
         self.id = None
 
         if self.output:
@@ -126,6 +126,7 @@ class WebClient(object):
         self.addr = old_self.addr
         self.id = old_self.id
         self.resolution = old_self.resolution
+        self.output = old_self.output
 
         # logout is needed to make sure loaded user-mapping.xml is up-to-date
         # otherwise VNC connections with password may not work, since guacamole
@@ -159,7 +160,7 @@ class WebServerThread(threading.Thread):
             self.time_last_seen = time_last_seen
 
         def is_dead(self):
-            if time.time() - self.time_last_seen > RECONNECT_TIMEOUT_S:
+            if time.time() - self.time_last_seen > self.RECONNECT_TIMEOUT_S:
                 self.client.kill()
                 # yep, it's dead
                 return True
@@ -263,7 +264,7 @@ class WebServerThread(threading.Thread):
 
             try:
                 while self._handle_sockets():
-                    pass
+                    self._clean_zombies()
             except:
                 # socket == None means that the thread got killed
                 if self.server_sock is not None:
