@@ -22,9 +22,8 @@ class VirtualOutput(object):
     self.vncSubprocess = vncSubprocess
     self.vncPort = vncPort
 
-def initVirtualOutput(resolution):
+def initVirtualOutput(resolution, position, outputs):
   modename, modeline = cvt(resolution[0], resolution[1])
-  screensize, outputs = parse_xrandr()
 
   outputNum = 1
   while outputs['VIRTUAL%d' % outputNum]['coords'] != None:
@@ -34,15 +33,15 @@ def initVirtualOutput(resolution):
   xrandr('--newmode %s' % modeline)
   xrandr('--addmode VIRTUAL%d %s' % (outputNum, modename))
   time.sleep(1) #TODO investigate
-  xrandr('--output VIRTUAL%d --mode %s --pos %dx0' % (outputNum, modename, screensize[0]))
+  xrandr('--output VIRTUAL%d --mode %s --pos %dx%d' % (outputNum, modename, position[0], position[1]))
   time.sleep(1) #TODO investigate
 
-  return outputNum, screensize
+  return outputNum
 
-def initVNC(resolution, screensize):
-  args = [ 
+def initVNC(resolution, screensize, position):
+  args = [
     'x11vnc',
-    '-clip', '%dx%d+%d+0' % (resolution[0], resolution[1], screensize[0]),
+    '-clip', '%dx%d+%d+%d' % (resolution[0], resolution[1], position[0], position[1]),
     '-viewonly', '-q'
   ]
 
@@ -64,10 +63,15 @@ def initVNC(resolution, screensize):
 
   return sp, vncPort
 
-def initVirtualOutputAndVNC(resolution):
-  outputNum, screensize = initVirtualOutput(resolution)
+def initVirtualOutputAndVNC(resolution, position):
+  screensize, outputs = parse_xrandr()
+
+  if position == None:
+    position = (screensize[0], 0)
+
+  outputNum = initVirtualOutput(resolution, position, outputs)
   try:
-    vncSubprocess, vncPort = initVNC(resolution, screensize)
+    vncSubprocess, vncPort = initVNC(resolution, screensize, position)
   except:
     print('cannot initialize VNC, cleaning up output %d' % outputNum)
     cleanup(VirtualOutput(virtualOutputNum=outputNum))

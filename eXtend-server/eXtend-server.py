@@ -4,6 +4,7 @@ from runAndWait import runAndWait
 
 import argparse
 import fcntl
+import itertools
 import json
 import os
 import re
@@ -32,6 +33,7 @@ parser.add_argument('-P', '--password-file')
 parser.add_argument('-m', '--manual-arrange', action = 'store_true')
 parser.add_argument('-l', '--log-file')
 parser.add_argument('-i', '--interface')
+parser.add_argument('-a', '--arrange', type = lambda x: map(int, x.split(' ')[:3]))
 
 # there's a second "if __name__ == '__main__':" at the end of this file
 if __name__ == '__main__':
@@ -67,6 +69,8 @@ logFile = (
   os.path.expanduser('~/.' + daemonProcessName + '.log')
 )
 
+arrangementSharedMap = {}
+
 
 def processRunning(name):
   command = 'ps -u `whoami` -o command'
@@ -98,6 +102,12 @@ def startInetSockets():
 #  inetMulticastHandler.daemon = True
   inetMulticastHandler.start()
 
+def arrange(clientId, position):
+  arrangementMapEntry = arrangementSharedMap[clientId]
+  l = arrangementMapEntry[0]
+  arrangementMapEntry[1] = position
+  l.release()
+
 def executeCommand(parsedArgs):
   print 'args:\n  ' + '\n  '.join('%s = %s' % x for x in parsedArgs.items())
 
@@ -123,6 +133,11 @@ def executeCommand(parsedArgs):
 
   global manualArrange
   manualArrange = parsedArgs['manual_arrange']
+
+  if parsedArgs['arrange'] != None:
+    position = [0, 0]
+    clientId, position[0], position[1] = parsedArgs['arrange']
+    result = arrange(clientId, position)
 
   if result != None:
     returnCode, errorMessage = result
@@ -154,6 +169,8 @@ def handleUnixAcceptor(unixAcceptorSocket):
 #    unixClientHandler.daemon = True
     unixClientHandler.start()
 
+counter = itertools.count()
+
 def handleInetClient(inetServerSocket):
   f = inetServerSocket.makefile()
 
@@ -164,7 +181,22 @@ def handleInetClient(inetServerSocket):
   assert resolution[0] == 'resolution'
   resolution = map(int, resolution[1:])
 
-  output = vnc.initVirtualOutputAndVNC(resolution)
+  clientId = counter.next()
+  f.write('id %d\n' % clientId)
+
+  position = None
+
+  if manualArrange:
+    l = threading.Lock()
+    global arrangementSharedMap
+    arrangementSharedMap[clientId] = [l, None]
+    print 'client %d waiting for screen position\n' % clientId
+    l.acquire()
+    l.acquire()
+    position = arrangementSharedMap[clientId][1]
+    print ('client %d arranged on position ' + str(position) + '\n') % clientId
+
+  output = vnc.initVirtualOutputAndVNC(resolution, position)
 
   try:
     f.write('vnc %s %d %d %d\n' % ((inetServerSocket.getsockname()[0], output.vncPort) +  output.offset))
