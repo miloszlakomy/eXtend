@@ -12,6 +12,7 @@ import argparse
 import struct
 from pymouse import PyMouse
 from message_buffer import MessageBuffer
+import ifutils
 
 DEFAULT_PORT = int(os.getenv('EXTEND_PORT') or 0x7e5d)
 DEFAULT_MCAST_GROUP = os.getenv('EXTEND_MCAST_GROUP') or '224.0.126.93'
@@ -68,6 +69,12 @@ parser.add_argument('-w', '--vnc-passwd-file',
                     help='path to the file containing a password used to '
                          'authenticate with the VNC server. If not specified, '
                          'no password will be used.')
+parser.add_argument('-i', '--interface',
+                    action='store',
+                    dest='interface',
+                    default=None,
+                    help='name of the interface that will be used for '
+                         'communication')
 
 ARGS = parser.parse_args()
 
@@ -106,7 +113,7 @@ class EXtendClient(object):
 
         self.reset()
 
-    def init_multicast(self, group, port):
+    def init_multicast(self, ifname, group, port):
         print('listening for multicast messages to %s:%d' % (group, port))
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -114,7 +121,12 @@ class EXtendClient(object):
         self.udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 8)
         self.udp_socket.bind((group, port))
 
-        mreq = struct.pack('4sl', socket.inet_aton(group), socket.INADDR_ANY)
+        if ifname:
+            local_addr = socket.inet_aton(ifutils.get_ip_for_iface(ifname))
+            mreq = struct.pack('4s4s', socket.inet_aton(group), local_addr)
+        else:
+            mreq = struct.pack('4sl', socket.inet_aton(group), socket.INADDR_ANY)
+
         self.udp_socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
     def on_udp_socket_ready(self, port):
@@ -136,9 +148,9 @@ class EXtendClient(object):
         for msg in self.tcp_msg_buffer:
             self.process_tcp_message(msg)
 
-    def run(self, mcast_group, port, server_ip=None):
+    def run(self, ifname, mcast_group, port, server_ip=None):
         print('eXtend client daemon running')
-        self.init_multicast(mcast_group, port)
+        self.init_multicast(ifname, mcast_group, port)
 
         if server_ip is not None:
             self.connect((server_ip, port))
@@ -231,7 +243,7 @@ class EXtendClient(object):
     def process_tcp_message(self, msg):
         print('TCP >> %s' % msg)
         return self.process_message(msg, {
-            #'vnc': lambda *args: self.vnc_start(*args),
+            'vnc': lambda *args: self.vnc_start(*args),
             'id': lambda *args: self.id_assigned(*args)
         })
 
@@ -248,7 +260,8 @@ client = None
 try:
     client = EXtendClient(ARGS.vnc_client_cmd,
                           ARGS.vnc_password_file)
-    client.run(mcast_group=ARGS.mcast_group,
+    client.run(ifname=ARGS.interface,
+               mcast_group=ARGS.mcast_group,
                port=ARGS.port,
                server_ip=ARGS.server_ip)
 except KeyboardInterrupt:

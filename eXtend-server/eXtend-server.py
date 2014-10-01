@@ -14,10 +14,12 @@ import subprocess
 import sys
 import time
 import threading
+import traceback
 
 import pymouse
 import setproctitle
 import vnc
+import ifutils
 
 parser = argparse.ArgumentParser()
 
@@ -29,6 +31,7 @@ parser.add_argument('-w', '--start-web', action = 'store_true')
 parser.add_argument('-P', '--password-file')
 parser.add_argument('-m', '--manual-arrange', action = 'store_true')
 parser.add_argument('-l', '--log-file')
+parser.add_argument('-i', '--interface')
 
 # there's a second "if __name__ == '__main__':" at the end of this file
 if __name__ == '__main__':
@@ -96,7 +99,7 @@ def startInetSockets():
   inetMulticastHandler.start()
 
 def executeCommand(parsedArgs):
-  print parsedArgs
+  print 'args:\n  ' + '\n  '.join('%s = %s' % x for x in parsedArgs.items())
 
   returnCode = 0
   errorMessage = 'success'
@@ -131,7 +134,11 @@ def handleUnixClient(unixServerSocket):
 
   parsedArgs = json.loads(f.readline())
 
-  returnCode, errorMessage = executeCommand(parsedArgs)
+  try:
+    returnCode, errorMessage = executeCommand(parsedArgs)
+  except Exception as e:
+    returnCode = -1
+    errorMessage = traceback.format_exc(e)
 
   f.write(json.dumps((returnCode, errorMessage)))
 
@@ -190,6 +197,12 @@ def handleInetAcceptor():
 def setupMulticastSocket(multicastGroup, multicastPort):
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
   sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+
+  if parsedArgs.interface:
+    ip = ifutils.get_ip_for_iface(parsedArgs.interface)
+    print('using interface %s (%s)' % (parsedArgs.interface, ip))
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(ip))
+
   return sock
 
 class MouseThread(pymouse.PyMouseEvent):
