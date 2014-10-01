@@ -3,6 +3,7 @@
 import collections
 import errno
 import os
+import shlex
 import signal
 import select
 import socket
@@ -218,7 +219,7 @@ class EXtendClient(object):
 
     def id_assigned(self, new_id):
         print('got ID: %s' % new_id)
-        pyfiglet.print_figlet(new_id)
+        pyfiglet.print_figlet(new_id, 'doh')
         self.id = new_id
 
     def set_cursor_pos(self, x, y):
@@ -233,7 +234,7 @@ class EXtendClient(object):
         if not stripped:
             raise ValueError('empty message')
 
-        words = stripped.split()
+        words = shlex.split(stripped)
         handler = handlers.get(words[0])
 
         if handler is not None:
