@@ -10,9 +10,13 @@ import subprocess
 import sys
 import argparse
 import struct
-from libs.pymouse import PyMouse
-from libs.message_buffer import MessageBuffer
-from libs import ifutils
+
+sys.path += [ os.path.join(os.path.dirname(__file__), 'libs') ]
+
+from pymouse import PyMouse
+from message_buffer import MessageBuffer
+import ifutils
+import pyfiglet
 
 DEFAULT_PORT = int(os.getenv('EXTEND_PORT') or 0x7e5d)
 DEFAULT_MCAST_GROUP = os.getenv('EXTEND_MCAST_GROUP') or '224.0.126.93'
@@ -214,6 +218,7 @@ class EXtendClient(object):
 
     def id_assigned(self, new_id):
         print('got ID: %s' % new_id)
+        pyfiglet.print_figlet(new_id)
         self.id = new_id
 
     def set_cursor_pos(self, x, y):

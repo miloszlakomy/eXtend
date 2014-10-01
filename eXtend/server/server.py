@@ -16,10 +16,12 @@ import time
 import threading
 import traceback
 
-from libs import pymouse
-from libs import vnc
-from libs import ifutils
-from libs.runAndWait import runAndWait
+sys.path += [ os.path.join(os.path.dirname(__file__), 'libs') ]
+
+import pymouse
+import vnc
+import ifutils
+from runAndWait import runAndWait
 
 parser = argparse.ArgumentParser()
 
@@ -122,7 +124,7 @@ def executeCommand(parsedArgs):
     result = startInetSockets()
 
   if parsedArgs['start_web']:
-    from libs import web_server
+    import web_server
     print('starting')
     websocketServer = web_server.start_server('', parsedArgs['port_web'] or (inetSocketPort + 1))
     print('started')
