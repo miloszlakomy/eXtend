@@ -200,6 +200,10 @@ class EXtendClient(object):
             self.vnc_process.stdin.write(f.read() + '\n')
             self.vnc_process.stdin.flush()
 
+    def id_assigned(self, new_id):
+        print('got ID: %s' % new_id)
+        self.id = new_id
+
     def set_cursor_pos(self, x, y):
         PyMouse().move(x - self.display_offset[0],
                        y - self.display_offset[1])
@@ -227,7 +231,8 @@ class EXtendClient(object):
     def process_tcp_message(self, msg):
         print('TCP >> %s' % msg)
         return self.process_message(msg, {
-            'vnc': lambda *args: self.vnc_start(*args)
+            #'vnc': lambda *args: self.vnc_start(*args),
+            'id': lambda *args: self.id_assigned(*args)
         })
 
 def sighandler(*args):
