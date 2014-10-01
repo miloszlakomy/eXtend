@@ -10,9 +10,9 @@ import subprocess
 import sys
 import argparse
 import struct
-from pymouse import PyMouse
-from message_buffer import MessageBuffer
-import ifutils
+from libs.pymouse import PyMouse
+from libs.message_buffer import MessageBuffer
+from libs import ifutils
 
 DEFAULT_PORT = int(os.getenv('EXTEND_PORT') or 0x7e5d)
 DEFAULT_MCAST_GROUP = os.getenv('EXTEND_MCAST_GROUP') or '224.0.126.93'

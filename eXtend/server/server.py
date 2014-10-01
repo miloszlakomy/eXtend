@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-from runAndWait import runAndWait
-
 import argparse
 import fcntl
 import itertools
 import json
 import os
 import re
+import setproctitle
 import socket
 import stat
 import struct
@@ -17,10 +16,10 @@ import time
 import threading
 import traceback
 
-import pymouse
-import setproctitle
-import vnc
-import ifutils
+from libs import pymouse
+from libs import vnc
+from libs import ifutils
+from libs.runAndWait import runAndWait
 
 parser = argparse.ArgumentParser()
 
@@ -123,7 +122,7 @@ def executeCommand(parsedArgs):
     result = startInetSockets()
 
   if parsedArgs['start_web']:
-    import web_server
+    from libs import web_server
     print('starting')
     websocketServer = web_server.start_server('', parsedArgs['port_web'] or (inetSocketPort + 1))
     print('started')
