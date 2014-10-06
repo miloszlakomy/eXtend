@@ -33,7 +33,7 @@ parser.add_argument('-w', '--start-web', action = 'store_true')
 parser.add_argument('-P', '--password-file')
 parser.add_argument('-m', '--manual-arrange', action = 'store_true')
 parser.add_argument('-l', '--log-file')
-parser.add_argument('-i', '--interface')
+parser.add_argument('-i', '--interfaces', action = 'append')
 parser.add_argument('-a', '--arrange', type = lambda x: map(int, x.split(' ')[:3]))
 
 # there's a second "if __name__ == '__main__':" at the end of this file
@@ -227,13 +227,13 @@ def handleInetAcceptor():
 #    inetClientHandler.daemon = True
     inetClientHandler.start()
 
-def setupMulticastSocket(multicastGroup, multicastPort):
+def setupMulticastSocket(multicastGroup, multicastPort, interface):
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
   sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
 
-  if parsedArgs.interface:
-    ip = ifutils.get_ip_for_iface(parsedArgs.interface)
-    print('using interface %s (%s)' % (parsedArgs.interface, ip))
+  if interface:
+    ip = ifutils.get_ip_for_iface(interface)
+    print('enabling multicast on %s (%s)' % (interface, ip))
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, socket.inet_aton(ip))
 
   return sock
@@ -243,7 +243,10 @@ class MouseThread(pymouse.PyMouseEvent):
     pymouse.PyMouseEvent.__init__(self)
 
     global mcastGroup, mcastPort
-    self.sock = setupMulticastSocket(mcastGroup, mcastPort)
+    self.sockets = []
+
+    for iface in (parsedArgs.interfaces or [ None ]):
+        self.sockets.append(setupMulticastSocket(mcastGroup, mcastPort, iface))
 
     self.spammer = threading.Thread(target = self.spam)
     self.spammer.start()
@@ -256,7 +259,8 @@ class MouseThread(pymouse.PyMouseEvent):
     global mcastGroup, mcastPort
 
     msg = struct.pack('!II', x, y)
-    self.sock.sendto(msg, (mcastGroup, mcastPort))
+    for sock in self.sockets:
+        sock.sendto(msg, (mcastGroup, mcastPort))
 
   def move(self, x, y):
     self.sendCoords(x, y)
