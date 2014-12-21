@@ -35,6 +35,8 @@ parser.add_argument('-m', '--manual-arrange', action = 'store_true')
 parser.add_argument('-l', '--log-file')
 parser.add_argument('-i', '--interfaces', action = 'append')
 parser.add_argument('-a', '--arrange', type = lambda x: map(int, x.split(' ')[:3]))
+parser.add_argument('-lu', '--list-unarranged', action = 'store_true')
+parser.add_argument('-la', '--list-arranged', action = 'store_true')
 
 # there's a second "if __name__ == '__main__':" at the end of this file
 if __name__ == '__main__':
@@ -71,11 +73,12 @@ logFile = (
 )
 
 arrangementSharedMap = {}
+vncSubprocessMap = {}
 
 
-def processRunning(name):
+def processRunning(name, silent = False):
   command = 'ps -u `whoami` -o command'
-  ps = runAndWait(command)
+  ps = runAndWait(command, silent = silent)
 
   return re.findall('\n *' + name + ' *\n', '\n' + ps[0] + '\n') != []
 
@@ -113,7 +116,7 @@ def executeCommand(parsedArgs):
   print 'args:\n  ' + '\n  '.join('%s = %s' % x for x in parsedArgs.items())
 
   returnCode = 0
-  errorMessage = 'success'
+  message = 'success'
 
   result = None
 
@@ -138,12 +141,18 @@ def executeCommand(parsedArgs):
   if parsedArgs['arrange'] != None:
     position = [0, 0]
     clientId, position[0], position[1] = parsedArgs['arrange']
-    result = arrange(clientId, position)
+    arrange(clientId, position)
+
+  if parsedArgs['list_unarranged']:
+    message = arrangementSharedMap.keys()
+
+  if parsedArgs['list_arranged']:
+    message = vncSubprocessMap.keys()
 
   if result != None:
-    returnCode, errorMessage = result
+    returnCode, message = result
 
-  return returnCode, errorMessage
+  return returnCode, message
 
 def handleUnixClient(unixServerSocket):
   f = unixServerSocket.makefile()
@@ -151,12 +160,12 @@ def handleUnixClient(unixServerSocket):
   parsedArgs = json.loads(f.readline())
 
   try:
-    returnCode, errorMessage = executeCommand(parsedArgs)
+    returnCode, message = executeCommand(parsedArgs)
   except Exception as e:
     returnCode = -1
-    errorMessage = traceback.format_exc(e)
+    message = traceback.format_exc(e)
 
-  f.write(json.dumps((returnCode, errorMessage)))
+  f.write(json.dumps((returnCode, message)))
 
   f.close()
   unixServerSocket.close()
@@ -194,10 +203,12 @@ def handleInetClient(inetServerSocket):
     print 'client %d waiting for screen position\n' % clientId
     l.acquire()
     l.acquire()
-    position = arrangementSharedMap[clientId][1]
+    position = arrangementSharedMap.pop(clientId)[1]
     print ('client %d arranged on position ' + str(position) + '\n') % clientId
 
   output = vnc.initVirtualOutputAndVNC(resolution, position)
+  global vncSubprocessMap
+  vncSubprocessMap[clientId] = output.vncSubprocess
 
   try:
     f.write('vnc %s %d %d %d\n' % ((inetServerSocket.getsockname()[0], output.vncPort) +  output.offset))
@@ -346,7 +357,7 @@ if __name__ == '__main__':
     hasDaemonSpawnLock = True
   except OSError as e:
     if e.errno != 11: raise # not 'Resource temporarily unavailable'
-  if hasDaemonSpawnLock and not processRunning(daemonProcessName):
+  if hasDaemonSpawnLock and not processRunning(daemonProcessName, silent = True):
     spawnDaemon(daemon, (daemonSpawnLock, ))
 
   os.close(daemonSpawnLock)
@@ -365,7 +376,7 @@ if __name__ == '__main__':
   unixClientSocketFile.flush()
 
   if not parsedArgs.stop:
-    result = returnCode, errorMessage = json.loads(unixClientSocketFile.read())
+    result = returnCode, message = json.loads(unixClientSocketFile.read())
 
     print formatResult(result)
 
