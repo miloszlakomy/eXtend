@@ -96,7 +96,7 @@ def startInetSockets():
   if inetSocketsStarted:
     return 1, 'already started'
 
-  inetSocketStarted = True
+  inetSocketsStarted = True
 
   inetAcceptorHandler = threading.Thread(target = handleInetAcceptor)
 #  inetAcceptorHandler.daemon = True
