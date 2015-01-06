@@ -11,11 +11,27 @@
 
 Problem, z którym zmagaliśmy się w ramach pracy inżynierskiej, to możliwość wykorzystania połączonych w sieć komputerów jako dodatkowych monitorów. Dodatkowym wymaganiem była możliwość uruchomienia projektu pod systemem Linux. Docelowo nasze rozwiązanie miało umożliwiać wyświetlenie pulpitu pojedynczego komputera na ekranie złożonym z 24 monitorów podłączonych do 4 niezależnych stacji roboczych dostępnym w Katedrze Informatyki AGH.
 
+\section{Studium wykonalności i analiza ryzyka}
+
+Już na etapie rozpoczęcia prac nad projektem wiedzieliśmy, że istnieją alternatywne rozwiązania, które jednak nie działają pod wymaganym systemem operacyjnym (Linux). Wiedzieliśmy zatem, że problem jest możliwy do rozwiązania, chociaż żaden z nas nie miał pojęcia, w jaki sposób powinniśmy to osiągnąć. Najwięcej wątpliwości co do wykonalności projektu brało się właśnie stąd, że pomimo istnienia analogicznych aplikacji pod inne systemy operacyjne nikt nie pokusił się o stworzenie wersji linuksowej. Pozwalało to domniemywać, że zagadnienie to może sprawiać więcej problemów, niż wydaje się na początku. Z tego powodu pierwsza iteracja została przez nas w całości poświęcona na zaznajomienie się ze sposobem działania podobnych rozwiązań oraz stworzenie minimalnego funkcjonalnego prototypu.
+
+Kolejnym istotnym czynnikiem, jaki musieliśmy wziąć pod uwagę, jest różnorodność sprzętu, na którym można uruchomić Linuksa. Sterowniki kart graficznych różnych producentów nie udostępniają takich samych możliwości. Przekonaliśmy się o tym już podczas tworzenia prototypu, który uświadomił nam, że będziemy w stanie osiągnąć nasz cel wyłącznie na kartach graficznych Intela.
+
+Nie mogliśmy też zapomnieć o wydajności - gdyby okazało się, że nasze rozwiązanie działa zbyt wolno lub jest bardzo wymagające obliczeniowo, mogłoby nie nadawać się do użytku.
+
 \section{Proces}
 
 Zastosowaliśmy iteracyjny model prac: w danym momencie nie skupialiśmy się na kompletnym rozwiązaniu całego projektu, ale wyznaczaliśmy sobie cel trochę przybliżający nas do ostatecznego produktu. Nie ustalaliśmy ścisłych terminów zakończenia iteracji, chociaż założyliśmy, że pojedyncza iteracja kończąca się funkcjonalnym prototypem nie powinna trwać dłużej niż 3-4 miesiące. Ponieważ repozytorium projektu znajduje się na Githubie, dla wygody użyliśmy mechanizmu "issues" do zarządzania zadaniami do wykonania.
 
 Aby zapewnić zgodność powstającego produktu z oczekiwaniami klienta, kontaktowaliśmy się z nim na bieżąco, prezentując mu nasze pomysły i aktualny stan prac nad projektem. Pozwoliło to na szybkie wyjaśnianie pojawiających się wątpliwości i jasne sprecyzowanie wymagań.
+
+Pierwszą iterację poświęciliśmy w całości na dogłębne zapoznanie się z problemem, analizę sposobu działania alternatywnych aplikacji oraz stworzenie działającego prototypu. Dzięki temu upewniliśmy się, że opracowane przez nas rozwiązanie jest wystarczająco dobre.
+
+Drugą iterację spędziliśmy na doprowadzaniu prototypu do bardziej użytecznej postaci. Dodatkowo byliśmy zmuszeni usunąć problem w aplikacji x11vnc, napotkany przez nas podczas pierwszej iteracji.
+
+Trzecia iteracja zaowocowała w pełni funkcjonalnym narzędziem terminalowym, będącym w stanie automatycznie nawiązywać połączenie klienta z serwerem oraz ponawiać je, gdyby zostało ono przerwane. Przyglądaliśmy się też możliwości całkowitego wyeliminowania zależności klientów.
+
+Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacji oraz uzupełnianie dokumentacji projektu.
 
 \section{Iteracja 1}
   \subsection{Analiza dostępnych rozwiązań}
@@ -154,6 +170,32 @@ Aby zapewnić zgodność powstającego produktu z oczekiwaniami klienta, kontakt
 
   Ostatnią iterację przeznaczyliśmy na doszlifowanie projektu: usunęliśmy kilka drobnych błędów i uzupełniliśmy dokumentację.
 
-\section{Podsumowanie}
+\section{Podział prac}
 
-\end{document}
+  \textbf{Prace wykonane wspólnie}
+  \begin{itemize}[noitemsep]
+    \item analiza istniejących rozwiązań rozwiązujących podobny problem
+    \item opracowanie modelu komunikacji klient-serwer umożliwiającego automatyczną konfigurację serwera
+    \item opracowanie rozwiązania usprawniającego synchronizację ruchu kursora na ekranie klienta
+    \item dokumentacja projektu
+  \end{itemize}
+
+  \noindent
+  \textbf{Miłosz Łakomy}
+  \begin{itemize}[noitemsep]
+    \item opracowanie prototypowej wersji aplikacji
+    \item stworzenie skryptów upraszczających konfigurację wczesnej wersji projektu
+    \item zaprojektowanie i implementacja skryptu serwera
+  \end{itemize}
+
+  \noindent
+  \textbf{Marcin Radomski}
+  \begin{itemize}[noitemsep]
+    \item zlokalizowanie błędu w x11vnc i stworzenie łatki
+    \item zaprojektowanie i implementacja skryptu klienta
+    \item opracowanie prototypu klienta przeglądarkowego
+  \end{itemize}
+
+  \vfill
+
+\end{document} 
