@@ -25,18 +25,39 @@ from runAndWait import runAndWait
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-p', '--port', type = lambda x: int(x, 0))
-parser.add_argument('-s', '--start', action = 'store_true')
-parser.add_argument('-S', '--stop', action = 'store_true')
+parser.add_argument('-p', '--port', type = lambda x: int(x, 0), help='''
+set port used for communication; if not specified, the magic number 0x7e5d (32349) will be used
+''')
+parser.add_argument('-s', '--start', action = 'store_true', help='''
+start multicasting mouse coordinates and listening for incoming client connections
+''')
+parser.add_argument('-S', '--stop', action = 'store_true', help='''
+kill the server daemon
+''')
 parser.add_argument('-o', '--port-web', type = lambda x: int(x, 0))
 parser.add_argument('-w', '--start-web', action = 'store_true')
-parser.add_argument('-P', '--password-file')
-parser.add_argument('-m', '--manual-arrange', action = 'store_true')
-parser.add_argument('-l', '--log-file')
-parser.add_argument('-i', '--interfaces', action = 'append')
-parser.add_argument('-a', '--arrange', type = lambda x: map(int, x.split(' ')[:3]))
-parser.add_argument('-lu', '--list-unarranged', action = 'store_true')
-parser.add_argument('-la', '--list-arranged', action = 'store_true')
+parser.add_argument('-P', '--password-file', help='''
+set password file forwarded to the vnc server;
+if not specified, ~/.eXtend_vncPwd is used with default content 'lubieplacki'
+''')
+parser.add_argument('-m', '--manual-arrange', action = 'store_true', help='''
+arrange clients manually (with ./server.py -a) if specified, automatically (to the right of existing outputs) otherwise
+''')
+parser.add_argument('-l', '--log-file', help='''
+set log file used by the daemon; if not specified, '~/.eXtend-server_0X%%X.log' %% port is used
+''')
+parser.add_argument('-i', '--interfaces', action = 'append', help='''
+name of the interface that will be used for communication
+''')
+parser.add_argument('-a', '--arrange', type = lambda x: map(int, x.split(' ')[:3]), help='''
+./server.py -a '0 123 456' will arrange unarranged client number 0 on coordinates 123x456
+''')
+parser.add_argument('-lu', '--list-unarranged', action = 'store_true', help='''
+list unarranged clients
+''')
+parser.add_argument('-la', '--list-arranged', action = 'store_true', help='''
+list arranged clients
+''')
 
 # there's a second "if __name__ == '__main__':" at the end of this file
 if __name__ == '__main__':
