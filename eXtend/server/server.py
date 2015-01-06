@@ -93,6 +93,8 @@ def suicide():
   os.kill(os.getpid(), 1)
 
 def startInetSockets():
+  global inetSocketsStarted
+
   if inetSocketsStarted:
     return 1, 'already started'
 
