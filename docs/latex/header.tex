@@ -1,0 +1,34 @@
+\documentclass[polish,12pt]{aghthesis}
+
+\usepackage[utf8]{inputenc}
+
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{adjustbox}
+
+\graphicspath{ {img/} }
+
+\definecolor{dark-red}{rgb}{0.5,0,0}
+\definecolor{dark-green}{rgb}{0,0.5,0}
+\definecolor{dark-blue}{rgb}{0,0,0.5}
+\hypersetup{
+    colorlinks,
+    linkcolor={black},
+    urlcolor={dark-blue},
+    citecolor={dark-green}
+}
+
+\newcommand{\img}[3]{
+  \begin{figure}
+    \centering
+    \includegraphics[width=0.9\textwidth]{#1}
+    \caption{#2}
+    \label{fig:#3}
+  \end{figure}
+}
+
+\title{Rozszerzony pulpit serwera X działający w rozproszonych systemach komputerowych}
+\author{Miłosz Łakomy, Marcin Radomski}
+\supervisor{dr hab. inż. Krzysztof Boryczko, prof. nadzw. AGH}
+
