@@ -1,0 +1,134 @@
+\input{header.tex}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+\vfill
+\pagebreak
+
+\section{Słownik}
+
+  \begin{itemize}
+    \item \textbf{Klient eXtend} - część projektu eXtend przeznaczona do uruchamiania na klientach. Obejmuje skrypt w Pythonie wraz z niezbędnymi bibliotekami oraz aplikację klienta VNC.
+    \item \textbf{Serwer eXtend} - część projektu eXtend uruchamiana na serwerze. Obejmuje skrypt w Pythonie, niezbędne biblioteki, aplikację serwera VNC (x11vnc) oraz sterownik xserver-xorg-video-intel.
+    \item \textbf{Klient} - maszyna wykorzystywana przez serwer jako dodatkowy monitor rozszerzający dostępną powierzchnię pulpitu.
+    \item \textbf{Serwer} - komputer zarządzający połączeniem z klientami i wysyłający im obraz do wyświetlenia.
+  \end{itemize}
+
+\section{Architektura aplikacji}
+
+  \img{architecture.png}{Architektura aplikacji.}{Arch}
+
+  Serwer, na którym działa nasz projekt, korzysta z systemu operacyjnego Linux i serwera Xorg do wyświetlania grafiki. Prototyp systemu opiera się na sterowniku grafiki xserver-xorg-video-intel do kart graficznych Intela, który udostępnia rozszerzenie o nazwie intel-virtual-output. Pozwala ono na "przekonanie" serwera Xorg, że ma on do dyspozycji więcej fizycznych monitorów, niż w rzeczywistości jest do niego podłączonych. Obszary pulpitu nie mieszczące się na fizycznym monitorze maszyny są wysyłane do komputerów klienckich za pomocą protokołu VNC. Rozwiązanie to zakłada, że na komputerach klienckich są zainstalowane klienty VNC.
+
+  \subsection{Komunikacja klient-serwer}
+
+    Projekt eXtend składa się z aplikacji serwerowej oraz klienckiej. Używają one dwóch niezależnych kanałów komunikacji:
+    \begin{itemize}
+      \item połączenia konfiguracyjnego używającego TCP - w ten sposób klient i serwer negocjują parametry wirtualnego ekranu, identyfikator klienta oraz parametry połączenia VNC. Wiadomości są przesyłane z użyciem prostego tekstowego protokołu opisanego poniżej.
+      \item multicastowych pakietów UDP - serwer z dużą częstotliwością nadaje w ten sposób komunikaty o zmianie pozycji kursora w celu zminimalizowania zauważalnego opóźnienia między ruchem myszy a aktualizacją jego pozycji. Dodatkowo niepodłączone klienty po otrzymaniu tego typu pakietu traktują nadawcę jako serwer i próbują nawiązać połączenie konfiguracyjne po TCP.
+    \end{itemize}
+
+    Dodatkowo po podłączeniu klienta nawiązywane jest kolejne połączenie (VNC) do transmisji obrazu, który ma zostać wyświetlony na kliencie.
+
+    \img{eXtend-app-overview.png}{Komunikacja klient-serwer.}{Comm}
+
+  \subsection{Protokoły komunikacyjne}
+
+    \subsubsection{Konfiguracja}
+
+      W celu zapewnienia spójności przesyłanych danych używamy TCP jako protokołu warstwy sieciowej. Dla uproszczenia implementacji nasz protokół opiera się na niezaszyfrowanych wiadomościach tekstowych: każda pojedyncza wiadomość kończy się znakiem nowej linii, pierwszy wyraz oznacza typ wiadomości, a kolejne - właściwe dane.
+
+      Serwer może wysyłać następujące wiadomości:
+      \begin{itemize}
+        \item \textbf{id} \emph{identyfikator} - informuje klienta, że został mu przydzielony podany \emph{identyfikator}, który powinien zostać wyświetlony na ekranie w celu jego identyfikacji,
+        \item \textbf{vnc} \emph{host} \emph{port} \emph{offset\_x} \emph{offset\_y} - wysyła klientowi parametry przygotowanego dla niego połączenia VNC i informuje o położeniu ekranu klienta względem początku wirtualnego pulpitu. Ta wartość jest używana do poprawnego ustawiania kursora na ekranie klienta.
+      \end{itemize}
+
+      Klient wysyła do serwera tylko jeden typ wiadomości:
+      \begin{itemize}
+        \item \textbf{resolution} \emph{szerokość} \emph{wysokość} - informuje serwer o dostępnej na kliencie rozdzielczości ekranu w pikselach,
+      \end{itemize}
+
+    \subsubsection{Komunikacja multicastowa}
+
+      Do rozgłaszania adresu IP serwera oraz wysyłania aktualizacji pozycji kursora używamy 8-bajtowych datagramów UDP:
+      \begin{itemize}
+        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna X kursora
+        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna Y kursora
+      \end{itemize}
+
+\section{Część kliencka}
+
+  \subsection{Moduły i wykorzystywane biblioteki}
+    Klient eXtend korzysta z kilku zewnętrznych bibliotek:
+    \begin{itemize}
+      \item \textbf{PyUserInput} - \url{https://github.com/SavinaRoja/PyUserInput} - jako interfejs serwera X11: do pobierania rozdzielczości ekranu oraz ustawiania pozycji kursora otrzymanej od serwera,
+      \item \textbf{netifaces} - \url{https://pypi.python.org/pypi/netifaces} - do ograniczenia ilości interfejsów sieciowych, na których nasłuchuje klient,
+      \item \textbf{pyfiglet} - \url{https://github.com/pwaller/pyfiglet} - do czytelnego wyświetlania identyfikatora klienta otrzymanego od serwera w terminalu.
+    \end{itemize}
+
+    Oprócz nich, wykorzystywany jest też moduł \textbf{message\_buffer} współdzielony z serwerem. Służy on do dzielenia strumienia danych otrzymanego od serwera przez połączenie konfiguracyjne na pojedyncze wiadomości. Reszta kodu zamyka się w pliku \textbf{client.py} - cała logika mieści się w klasie EXtendClient.
+
+  \subsection{Sposób działania}
+
+    \img{eXtend-client-sequence.png}{Działanie aplikacji klienta}{ClientSeq}
+
+    Po nawiązaniu połączenia TCP jest ono utrzymywane do czasu zamknięcia aplikacji klienckiej lub serwerowej. W przypadku otrzymania kolejnej wiadomości z danymi serwera VNC klient odbierający obraz jest uruchamiany ponownie z nowymi parametrami. Jeśli połączenie VNC zostanie zerwane, klient eXtend próbuje nawiązać je ponownie. Podobnie, w przypadku utraty połączenia z serwerem eXtend aplikacja wraca do punktu wyjścia, oczekując na otrzymanie pakietu ze współrzędnymi myszy.
+
+\section{Część serwerowa}
+
+  \subsection{Moduły i wykorzystywane biblioteki}
+
+    Serwer eXtend korzysta z zewnętrznych bibliotek:
+
+    \begin{itemize}
+      \item \textbf{pymouse} - \url{https://github.com/SavinaRoja/PyUserInput} - do pobierania pozycji myszy na ekranie serwera, multicastowanej następnie do klientów,
+      \item \textbf{netifaces} - \url{https://pypi.python.org/pypi/netifaces} - do określenia interfejsów sieciowych, na których pracuje aplikacja.
+    \end{itemize}
+
+    Główna część kodu źródłowego serwera znajduje się w pliku \textbf{server.py}. Odwołuje się on do kilku pomocniczych modułów:
+
+    \begin{itemize}
+      \item \textbf{vnc.py} - dostarczającego api do kontrolowania zewnętrznej aplikacji serwera vnc (x11vnc), oraz inicjalizowania potrzebnych mu outputów xrandr,
+      \item \textbf{cvt.py} - dostarczającego api do aplikacji cvt, obliczającej VESA CVT modelines, potrzebnych do obsługi xrandr,
+      \item \textbf{parse\_xrandr.py} - konwertującego wyjście polecenia xrandr (bez argumentów) ze strumienia znaków do postaci zrozumiałej dla Pythona,
+      \item \textbf{runAndWait.py} - upraszczającego funkcję subprocess.Popen, poprzez rezygnację z jej równoległej natury i natychmiastowe wywołanie metody .wait na utworzonym procesie.
+    \end{itemize}
+
+    Oprócz modułów Pythona do serwera jest również dołączony prosty, jednolinijkowy, kopertowy skrypt basha \textbf{server.sh}, którego jedynym zadaniem jest odfiltrowanie wyjścia diagnostycznego modułu \textbf{pymouse}, dostarczającego niewiele istotnych informacji i zagłuszającego pozostałe komunikaty.
+
+  \subsection{Sposób działania}
+
+    Serwer eXtend jest daemonem. Dla każdej pary (użytkownik, port), dla której zostanie uruchomiony może istnieć tylko jedna jego instancja. Proces odpowiadający pierwszemu wywołaniu skryptu \textbf{server.py} zostaje daemonem, kolejne wywołania służą tylko przekazaniu ich parametrów wywołania do daemona. Po przekazaniu daemonowi argumentu \textbf{--start}, zaczyna on nadawać współrzędne kursora w grupie multicastowej i nasłuchiwać łączących się klientów. Dla każdego zdalnego klienta, który połączy się z daemonem serwera, zostaje utworzony nowy wirtualny output xrandr, odpowiadający mu serwer vnc i klientowi zostaje wysłany adres tego serwera.
+
+\section{Prototyp klienta przeglądarkowego}
+
+  \img{architecture-guacamole.png}{Architektura wersji z klientem przeglądarkowym}{GuacArch}
+
+  W tej wersji systemu użyliśmy dodatkowo projektu Guacamole (\url{http://guac-dev.org/}). Jest on swojego rodzaju proxy, pobierającym obraz otrzymany przez VNC i wysyłającym go po sieci w sposób umożliwiający wyświetlenie w przeglądarce. Dzięki temu jesteśmy w stanie skorzystać z wyświetlacza dowolnego urządzenia z przeglądarką obsługującą HTML5. Pozwala to całkowicie pominąć etap instalacji aplikacji klienckiej.
+
+  Niestety, dzieje się to kosztem skomplikowania serwerowej części projektu. Aplikacja serwera powiększa się o moduły:
+
+  \begin{itemize}
+    \item \textbf{web\_server.py} - moduł importowany z głównego skryptu serwera po uruchomieniu z opcją \textbf{--start-web}, zawierający całą logikę związaną z obsługą klientów przeglądarkowych,
+    \item \textbf{websocket.py} - klasa opakowująca standardowy socket w sposób umożliwiający łatwą komunikację z klientem przeglądarkowym zgodnie z protokołem WebSocket opisanym w RFC 6455 (\url{http://tools.ietf.org/html/rfc6455}),
+    \item \textbf{guacamole.py} - moduł odpowiedzialny za rekonfigurację Guacamole w momencie podłączenia klienta za pomocą strony internetowej.
+  \end{itemize}
+
+  Poza tym, niezbędne jest zainstalowanie Guacamole oraz niezbędnego do uruchomienia front-endu serwera Tomcat, co znacząco komplikuje proces uruchomienia serwera eXtend.
+
+  Po rozwiązaniu wszystkich zależności, niezbędne jest użycie sporządzonej przez nas strony klienckiej, która wewnętrznie korzysta z font-endu Guacamole. Z powodu związanych z bezpieczeństwem ograniczeń narzucanych na skrypty JavaScript oraz budowy klienta Guacamole procedura podłączenia przeglądarkowego klienta projektu eXtend jest bardziej skomplikowana niż ta używana w przypadku klienta w Pythonie. Niezbędne okazało się odświeżenie strony klienta w trakcie konfiguracji, co zmusiło nas do dodania kilku nowych typów wiadomości:
+
+  \begin{itemize}
+    \item \textbf{display} \emph{identyfikator} \emph{URL} - informuje klienta, że nadano mu identyfikator \emph{id} i powinien użyć przeglądarkowego klienta VNC dostępnego pod adresem \emph{URL},
+    \item \textbf{reconnect} \emph{identyfikator} - informuje serwer, że nawiązujący połączenie klient właśnie odświeżył stronę po nadaniu mu \emph{identyfikatora}, a nie jest kolejnym podłączającym się klientem,
+    \item \textbf{reauth} \emph{URL\_do\_wylogowania} \emph{URL\_do\_zalogowania} \emph{login} \emph{hasło} - używane do autentykacji we front-endzie Guacamole po jego restarcie, w celu uzyskania dostępu do obrazu wysyłanego przez VNC.
+  \end{itemize}
+
+  \img{eXtend-web-client-sequence.png}{Komunikacja między elementami systemu w przypadku podłączenia klienta za pomocą przeglądarki internetowej}{GuacComm}
+
+  Z powodu trudności technicznych oraz nietrywialnej konfiguracji wszystkich zależności tej wersji aplikacji powstał jedynie jej prototyp na jednej z używanych maszyn. Dalszy rozwój projektu w tym kierunku nie będzie wchodził w zakres tej pracy inżynierskiej.
+
+\end{document}
