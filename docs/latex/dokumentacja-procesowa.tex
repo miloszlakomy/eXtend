@@ -125,8 +125,35 @@ Aby zapewnić zgodność powstającego produktu z oczekiwaniami klienta, kontakt
 
   \subsection{Automatyczna konfiguracja}
 
+    W tej iteracji zajęliśmy się stworzeniem skryptów umożliwiających proste podłączanie komputerów klienckich. Zaprojektowaliśmy system składający się z aplikacji klienckiej oraz serwerowej, umożliwiający automatyczne wykrywanie obecności serwera projektu w sieci oraz konfigurację połączenia z nim.
+
+    \textbf{Aplikacja kliencka:}
+    \begin{itemize}[noitemsep,nolistsep]
+      \item wykrywa ruch multicastowy pochodzący od serwera w celu jego zlokalizowania,
+      \item łączy się z wykrytym serwerem,
+      \item używa klienta VNC do wyświetlenia części pulpitu serwera.
+    \end{itemize}
+
+    \textbf{Aplikacja serwerowa:}
+    \begin{itemize}[noitemsep,nolistsep]
+      \item rozgłasza swoją obecność w sieci komunikatami multicastowymi,
+      \item przyjmuje połączenia klientów,
+      \item przydziela każdemu klientowi część pulpitu, powiększając go w razie potrzeby,
+      \item dla każdego klienta uruchamia serwer VNC wysyłający mu obraz z przydzielonej części pulpitu.
+    \end{itemize}
+
   \subsection{Problem z odświeżaniem pozycji kursora myszy}
 
+    Podczas spotkania z klientem okazało się, że częstotliwość odświeżania pozycji kursora myszy za pomocą VNC jest niewystarczającado komfortowej pracy. Po przeanalizowaniu dostępnych możliwości zdecydowaliśmy się zaimplementować własny mechanizm do transmisji pozycji kursora. Osiągnęliśmy to przez dołączenie tej informacji do pakietów multicastowych wysyłanych przez serwer.
+
+  \subsection{Prototyp wersji przeglądarkowej}
+
+    W trakcie tej iteracji powstał również prototyp modułu serwera umożliwiający podłączanie klientów przeglądarkowych z użyciem Guacamole. Został on zaprojektowany w taki sposób, aby mógł być używany równolegle z częścią obsługująca standardowe  klienty. Implementacja okazała się być jednak nietrywialna i powstały prototyp nie działał na tyle niezawodnie, żeby mógł stać się częścią projektu. Kolejnym z problemów było znaczne zwiększenie zależności aplikacji serwerowej. Po konsultacji z klientem i ustaleniu, że nie jest to niezbędna część aplikacji postanowiliśmy pozostawić ten moduł w fazie prototypu, nie dodając go do finalnej wersji aplikacji.
+
 \section{Iteracja 4}
+
+  Ostatnią iterację przeznaczyliśmy na doszlifowanie projektu: usunęliśmy kilka drobnych błędów i uzupełniliśmy dokumentację.
+
+\section{Podsumowanie}
 
 \end{document}
