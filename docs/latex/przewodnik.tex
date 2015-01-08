@@ -1,0 +1,376 @@
+\input{header.tex}
+
+\usepackage{verbatim}
+\begin{document}
+\subtitle{}
+\maketitle
+
+\tableofcontents
+\vfill
+\pagebreak
+
+\begin{comment}
+\section{Architektura aplikacji}
+
+  \subsection{Komunikacja klient-serwer}
+
+    Projekt eXtend składa się z aplikacji serwerowej oraz klienckiej. Używają one dwóch niezależnych kanałów komunikacji:
+
+    \begin{itemize}
+      \item połączenia konfiguracyjnego używającego TCP - w ten sposób klient i serwer negocjują parametry wirtualnego ekranu, identyfikator klienta oraz parametry połączenia VNC. Wiadomości są przesyłane z użyciem prostego tekstowego protokołu opisanego poniżej.
+      \item multicastowych pakietów UDP - serwer nadaje w ten sposób komunikaty o zmianie pozycji kursora w celu zminimalizowania zauważalnego opóźnienia między ruchem myszy a aktualizacją jego pozycji. Dodatkowo niepodłączone klienty po otrzymaniu tego typu pakietu traktują nadawcę jako serwer i próbują nawiązać połączenie konfiguracyjne po TCP.
+    \end{itemize}
+
+    Dodatkowo po podłączeniu klienta nawiązywane jest kolejne połączenie (VNC) do transmisji obrazu, który ma zostać wyświetlony na kliencie.
+
+    \img{eXtend-app-overview.png}{Komunikacja klient-serwer.}{Comm}
+\section{Część kliencka}
+
+  \subsection{Moduły i wykorzystywane biblioteki}
+    Klient eXtend korzysta z kilku zewnętrznych bibliotek:
+    \begin{itemize}
+      \item \textbf{PyUserInput} - \url{https://github.com/SavinaRoja/PyUserInput} - jako interfejs serwera X11: do pobierania rozdzielczości ekranu oraz ustawiania pozycji kursora otrzymanej od serwera,
+      \item \textbf{netifaces} - \url{https://pypi.python.org/pypi/netifaces} - do ograniczenia ilości interfejsów sieciowych, na których nasłuchuje klient,
+      \item \textbf{pyfiglet} - \url{https://github.com/pwaller/pyfiglet} - do czytelnego wyświetlania identyfikatora klienta otrzymanego od serwera w terminalu.
+    \end{itemize}
+
+    Oprócz nich, wykorzystywany jest też moduł \textbf{message\_buffer} współdzielony z serwerem. Służy on do dzielenia strumienia danych otrzymanego od serwera przez połączenie konfiguracyjne na pojedyncze wiadomości. Reszta kodu zamyka się w pliku \textbf{client.py} - cała logika mieści się w klasie EXtendClient.
+
+  \subsection{Sposób działania}
+
+    Po nawiązaniu połączenia TCP jest ono utrzymywane do czasu zamknięcia aplikacji klienckiej lub serwerowej. W przypadku otrzymania kolejnej wiadomości z danymi serwera VNC klient odbierający obraz jest uruchamiany ponownie z nowymi parametrami. Jeśli połączenie VNC zostanie zerwane, klient eXtend próbuje nawiązać je ponownie. Podobnie, w przypadku utraty połączenia z serwerem eXtend aplikacja wraca do punktu wyjścia, oczekując na otrzymanie pakietu ze współrzędnymi myszy.
+
+\section{Część serwerowa}
+
+  \subsection{Moduły i wykorzystywane biblioteki}
+
+    Serwer eXtend korzysta z zewnętrznych bibliotek:
+
+    \begin{itemize}
+      \item \textbf{pymouse} - \url{https://github.com/SavinaRoja/PyUserInput} - do pobierania pozycji myszy na ekranie serwera, multicastowanej następnie do klientów,
+      \item \textbf{netifaces} - \url{https://pypi.python.org/pypi/netifaces} - do określenia interfejsów sieciowych, na których pracuje aplikacja.
+    \end{itemize}
+
+    Główna część kodu źródłowego serwera znajduje się w pliku \textbf{server.py}. Odwołuje się on do kilku pomocniczych modułów:
+
+    \begin{itemize}
+      \item \textbf{vnc.py} - dostarczającego api do kontrolowania zewnętrznej aplikacji serwera vnc (x11vnc), oraz inicjalizowania potrzebnych mu outputów xrandr,
+      \item \textbf{cvt.py} - dostarczającego api do aplikacji cvt, obliczającej VESA CVT modelines, potrzebnych do obsługi xrandr,
+      \item \textbf{parse\_xrandr.py} - konwertującego wyjście polecenia xrandr (bez argumentów) ze strumienia znaków do postaci zrozumiałej dla Pythona,
+      \item \textbf{runAndWait.py} - upraszczającego funkcję subprocess.Popen, poprzez rezygnację z jej równoległej natury i natychmiastowe wywołanie metody .wait na utworzonym procesie.
+    \end{itemize}
+
+    Oprócz modułów Pythona do serwera jest również dołączony prosty, jednolinijkowy, kopertowy skrypt basha \textbf{server.sh}, którego jedynym zadaniem jest odfiltrowanie wyjścia diagnostycznego modułu \textbf{pymouse}, dostarczającego niewiele istotnych informacji i zagłuszającego pozostałe komunikaty.
+
+  \subsection{Sposób działania}
+
+    Serwer eXtend jest daemonem. Dla każdej pary (użytkownik, port), dla której zostanie uruchomiony może istnieć tylko jedna jego instancja. Proces odpowiadający pierwszemu wywołaniu skryptu \textbf{server.py} zostaje daemonem, kolejne wywołania służą tylko przekazaniu ich parametrów wywołania do daemona. Po przekazaniu daemonowi argumentu \textbf{--start}, zaczyna on nadawać współrzędne kursora w grupie multicastowej i nasłuchiwać łączących się klientów. Dla każdego zdalnego klienta, który połączy się z daemonem serwera, zostaje utworzony nowy wirtualny output xrandr, odpowiadający mu serwer vnc i klientowi zostaje wysłany adres tego serwera.
+
+\section{Prototyp klienta przeglądarkowego}
+
+  \img{architecture-guacamole.png}{Architektura wersji z klientem przeglądarkowym}{GuacArch}
+
+  W tej wersji systemu użyliśmy dodatkowo projektu Guacamole (\url{http://guac-dev.org/}). Jest on swojego rodzaju proxy, pobierającym obraz otrzymany przez VNC i wysyłającym go po sieci w sposób umożliwiający wyświetlenie w przeglądarce. Dzięki temu jesteśmy w stanie skorzystać z wyświetlacza dowolnego urządzenia z przeglądarką obsługującą HTML5. Pozwala to całkowicie pominąć etap instalacji aplikacji klienckiej.
+
+  Niestety, dzieje się to kosztem skomplikowania serwerowej części projektu. Aplikacja serwera powiększa się o moduły:
+
+  \begin{itemize}
+    \item \textbf{web\_server.py} - moduł importowany z głównego skryptu serwera po uruchomieniu z opcją \textbf{--start-web}, zawierający całą logikę związaną z obsługą klientów przeglądarkowych,
+    \item \textbf{websocket.py} - klasa opakowująca standardowy socket w sposób umożliwiający łatwą komunikację z klientem przeglądarkowym zgodnie z protokołem WebSocket opisanym w RFC 6455 (\url{http://tools.ietf.org/html/rfc6455}),
+    \item \textbf{guacamole.py} - moduł odpowiedzialny za rekonfigurację Guacamole w momencie podłączenia klienta za pomocą strony internetowej.
+  \end{itemize}
+
+  Poza tym, niezbędne jest zainstalowanie Guacamole oraz niezbędnego do uruchomienia front-endu serwera Tomcat, co znacząco komplikuje proces uruchomienia serwera eXtend.
+
+  Po rozwiązaniu wszystkich zależności, niezbędne jest użycie sporządzonej przez nas strony klienckiej, która wewnętrznie korzysta z front-endu Guacamole. Z powodu związanych z bezpieczeństwem ograniczeń narzucanych na skrypty JavaScript oraz budowy klienta Guacamole procedura podłączenia przeglądarkowego klienta projektu eXtend jest bardziej skomplikowana niż ta używana w przypadku klienta w Pythonie. Niezbędne okazało się odświeżenie strony klienta w trakcie konfiguracji, co zmusiło nas do dodania kilku nowych typów wiadomości:
+
+  \begin{itemize}
+    \item \textbf{display} \emph{identyfikator} \emph{URL} - informuje klienta, że nadano mu identyfikator \emph{id} i powinien użyć przeglądarkowego klienta VNC dostępnego pod adresem \emph{URL},
+    \item \textbf{reconnect} \emph{identyfikator} - informuje serwer, że nawiązujący połączenie klient właśnie odświeżył stronę po nadaniu mu \emph{identyfikatora}, a nie jest kolejnym podłączającym się klientem,
+    \item \textbf{reauth} \emph{URL\_do\_wylogowania} \emph{URL\_do\_zalogowania} \emph{login} \emph{hasło} - używane do autentykacji we front-endzie Guacamole po jego restarcie, w celu uzyskania dostępu do obrazu wysyłanego przez VNC.
+  \end{itemize}
+
+  \img{eXtend-web-client-sequence.png}{Komunikacja między elementami systemu w przypadku podłączenia klienta za pomocą przeglądarki internetowej}{GuacComm}
+
+  Z powodu trudności technicznych oraz nietrywialnej konfiguracji wszystkich zależności tej wersji aplikacji powstał jedynie jej prototyp na jednej z używanych maszyn. Dalszy rozwój projektu w tym kierunku nie będzie wchodził w zakres tej pracy inżynierskiej.
+
+\end{document}
+\end{comment}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+\section{Słownik}
+
+  \begin{itemize}
+    \item \textbf{Klient eXtend} - część projektu eXtend przeznaczona do uruchamiania na klientach. Obejmuje skrypt w Pythonie wraz z niezbędnymi bibliotekami oraz aplikację klienta VNC.
+    \item \textbf{Serwer eXtend} - część projektu eXtend uruchamiana na serwerze. Obejmuje skrypt w Pythonie, niezbędne biblioteki, aplikację serwera VNC (x11vnc) oraz sterownik xserver-xorg-video-intel.
+    \item \textbf{Klient} - maszyna wykorzystywana przez serwer jako dodatkowy monitor rozszerzający dostępną powierzchnię pulpitu.
+    \item \textbf{Serwer} - komputer zarządzający połączeniem z klientami i wysyłający im obraz do wyświetlenia.
+  \end{itemize}
+
+\section{Cel prac i wizja produktu}
+
+  Problem, z którym zmagaliśmy się w ramach pracy inżynierskiej, to możliwość wykorzystania połączonych w sieć komputerów jako dodatkowych monitorów. Dodatkowym wymaganiem była możliwość uruchomienia projektu pod systemem Linux. Docelowo nasze rozwiązanie miało umożliwiać wyświetlenie pulpitu pojedynczego komputera na ekranie złożonym z 24 monitorów podłączonych do 4 niezależnych stacji roboczych dostępnym w Katedrze Informatyki AGH.
+
+  \subsection{Istniejące rozwiązania o zbliżonej tematyce}
+
+    \begin{itemize}
+
+      \item \textbf{MaxiVista} \cite{ProjMaxiVista}
+
+        Jest to projekt bliźniaczo podobny do naszego. Umożliwia podpięcie dodatkowych komputerów po sieci z użyciem TCP/IP. Nie satysfakcjonuje on nas ze względu na pewne poważne ograniczenia:
+        \begin{itemize}
+          \item na maszynie będącej serwerem musi być zainstalowany system Windows, klientem może być Windows lub Mac
+          \item można podłączyć maksymalnie 3 klienty
+          \item większość opcji jest dostępna tylko w wersji Pro
+          \item za darmo dostępna jest tylko 30-dniowa wersja próbna
+          \item ilość dostępnych rozdzielczości jest mocno ograniczona
+        \end{itemize}
+
+      \item \textbf{ZoneScreen} \cite{ProjZoneScreen}
+
+        Projekt analogiczny do MaxiVista, ale darmowy. Serwer działa tylko pod Windowsem, ale klientem może być dowolny system, na którym można uruchomić klienta VNC. Obsługuje więcej niż jednego klienta - autor nie podaje górnego ograniczenia.
+
+      \item \textbf{AirDisplay} \cite{ProjAirDisplay}
+
+        Podobny do MaxiVista i ZoneScreen. Można podłączyć maksymalnie 4 ekrany, chociaż informacja na stronie mówi, że działa to tylko na Macach. Klientami mogą być urządzenia z Androidem, Windowsem, OS X-em lub iOSem.
+
+      \item \textbf{Xdmx} - Distributed Multihead X \cite{ProjXDMX}
+
+        Open-sourcowy projekt oparty na hierarchii serwerów X - jeden "główny" (front-end) i wiele "podrzędnych" (back-end). Był to projekt, z którym początkowo wiązaliśmy największe nadzieje: w końcu był stworzony z myślą o linuksie i X11. Próby jego użycia jednak spełzły na niczym - okazało się, że projekt na Sourceforge nie jest aktualizowany od 10 lat i brakuje informacji o tym, że jego repozytorium zostało przeniesione na freedesktop.org/xorg. Brakuje aktualnej dokumentacji, aktualizacje pojawiają się niezwykle rzadko, a co gorsza sam projekt do obsługi wielu monitorów korzysta z rozszerzenia Xinerama, które zostało de facto zastąpione przez RandR. Mimo usilnych prób nie udało nam się doprowadzić Xdmx do działania.
+
+      \item \textbf{ParaView} \cite{ProjParaView}
+
+        ParaView jest obsługującą rozproszone wielomonitorowe konfiguracje aplikacją do wizualizacji danych w 3D. Jest to program używany w laboratorium w Katedrze Informatyki, ale niestety nie można użyć go jako narzędzia pozwalającego na transmisję fragmentu pulpitu.
+
+    \end{itemize}
+
+  \subsection{Studium wykonalności i analiza ryzyka}
+
+    Już na etapie rozpoczęcia prac nad projektem wiedzieliśmy, że istnieją alternatywne rozwiązania, które jednak nie działają pod wymaganym systemem operacyjnym (Linux). Wiedzieliśmy zatem, że problem jest możliwy do rozwiązania, chociaż żaden z nas nie miał pojęcia, w jaki sposób powinniśmy to osiągnąć. Najwięcej wątpliwości co do wykonalności projektu brało się właśnie stąd, że pomimo istnienia analogicznych aplikacji pod inne systemy operacyjne nikt nie pokusił się o stworzenie wersji linuksowej. Pozwalało to domniemywać, że zagadnienie to może sprawiać więcej problemów, niż wydaje się na początku. Z tego powodu pierwsza iteracja została przez nas w całości poświęcona na zaznajomienie się ze sposobem działania podobnych rozwiązań oraz stworzenie minimalnego funkcjonalnego prototypu.
+
+    Kolejnym istotnym czynnikiem, jaki musieliśmy wziąć pod uwagę, jest różnorodność sprzętu, na którym można uruchomić Linuksa. Sterowniki kart graficznych różnych producentów nie udostępniają takich samych możliwości. Przekonaliśmy się o tym już podczas tworzenia prototypu, który uświadomił nam, że będziemy w stanie osiągnąć nasz cel wyłącznie na kartach graficznych Intela.
+
+    \vfill
+    \pagebreak
+
+\section{Zakres funkcjonalności}
+
+  Aplikacja będąca wynikiem prac nad projektem miała:
+
+  \begin{itemize}[noitemsep]
+    \item umożliwić rozszerzenie pulpitu serwera o monitor klienta z użyciem sieci,
+    \item działać pod systemem operacyjnym Linux,
+    \item być w stanie obsłużyć 24-ro segmentowy monitor znajdujący się w laboratorium 1.18, obsługiwany przez 4 niezależne komputery,
+    \item posiadać multiplatformową część kliencką, pozwalającą na wykorzystanie maszyn z różnymi systemami operacyjnymi,
+    \item być prosta w instalacji i użytkowaniu,
+    \item działać na tyle niezawodnie, na ile pozwala na to architektura sieciowa,
+    \item działać wystarczająco wydajnie, by nie przeszkadzać w pracy z jej użyciem.
+  \end{itemize}
+
+\section{Wybrane aspekty realizacji}
+
+  \subsection{Przyjęte założenia}
+
+    Do prac nad projektem zdecydowaliśmy się użyć przede wszystkim Pythona, ze względu na popularność tego języka, szybkość implementowania oraz dostępność wielu bibliotek.
+
+    Przygotowany prototyp aplikacji uświadomił nam, że dużo problemem dużo większym niż początkowo zakładaliśmy będą możliwości sterowników grafiki - aktualnie jedynie sterownik Intela jest w stanie tworzyć wirtualne ekrany, które są nam niezbędne. Modyfikacja innych sterowników w celu zaimplementowania tej funkcji okazała się przerastać nasze możliwości, więc ograniczyliśmy się do obsługi kart graficznych Intela.
+
+    Do transmisji obrazu użyliśmy VNC, a konkretnie projektu x11vnc \cite{x11vncProj}. Dzięki skorzystaniu ze sprawdzonego protokołu zyskaliśmy pewność, że wydajność rozwiązania jest zadowalająca. Dodatkowym plusem okazało się to, że jest to projekt open-source, co dało nam możliwość odnalezienia i poprawienia napotkanego przez nas błędu (patrz: \ref{sec:x11vncBug}).
+
+    \vfill
+
+  \subsection{Architektura systemu}
+
+    Prototyp systemu opiera się na sterowniku grafiki xserver-xorg-video-intel do kart graficznych Intela, który udostępnia rozszerzenie o nazwie intel-virtual-output. Pozwala ono na \"przekonanie\" serwera Xorg, że ma on do dyspozycji więcej fizycznych monitorów, niż w rzeczywistości jest do niego podłączonych. Obszary pulpitu nie mieszczące się na fizycznym monitorze maszyny są wysyłane do komputerów klienckich za pomocą protokołu VNC. Rozwiązanie to zakłada, że na komputerach klienckich są zainstalowane klienty VNC.
+
+    \img{architecture.png}{Architektura aplikacji.}{Arch}
+
+    Projekt eXtend składa się z aplikacji serwerowej oraz klienckiej. Używają one dwóch niezależnych kanałów komunikacji:
+    \begin{itemize}
+      \item połączenia konfiguracyjnego używającego TCP - w ten sposób klient i serwer negocjują parametry wirtualnego ekranu, identyfikator klienta oraz parametry połączenia VNC. Wiadomości są przesyłane z użyciem prostego tekstowego protokołu opracowanego przez nas.
+      \item multicastowych pakietów UDP - serwer nadaje w ten sposób komunikaty o zmianie pozycji kursora w celu zminimalizowania zauważalnego opóźnienia między ruchem myszy a aktualizacją jego pozycji. Dodatkowo niepodłączone klienty po otrzymaniu tego typu pakietu traktują nadawcę jako serwer i próbują nawiązać połączenie konfiguracyjne po TCP. Ponieważ potrzebowaliśmy rozwiązania pozwalającego na minimalizację opóźnienia ruchów myszą względem aktualizacji pozycji kursora na ekranie, ilość pojawiających się w sieci pakietów ze współrzędnymi myszy mogła stać się całkiem spora. Użycie pakietów multicastowych pozwoliło nam uniezależnić szerokość pasma wykorzystywanego do transmisji pozycji kursora od ilości klientów podłączonych do serwera.
+    \end{itemize}
+
+    Dodatkowo po podłączeniu klienta nawiązywane jest kolejne połączenie (VNC) do transmisji obrazu, który ma zostać wyświetlony na kliencie.
+
+    \img{eXtend-app-overview.png}{Komunikacja klient-serwer.}{Comm}
+    \img{eXtend-client-sequence.png}{Działanie aplikacji klienta}{ClientSeq}
+
+  \subsection{Protokoły komunikacyjne}
+
+    \subsubsection{Konfiguracja}
+
+      W celu zapewnienia spójności przesyłanych danych używamy TCP jako protokołu warstwy sieciowej. Dla uproszczenia implementacji nasz protokół opiera się na niezaszyfrowanych wiadomościach tekstowych: każda pojedyncza wiadomość kończy się znakiem nowej linii, pierwszy wyraz oznacza typ wiadomości, a kolejne - właściwe dane.
+
+      Serwer może wysyłać następujące wiadomości:
+      \begin{itemize}[nolistsep]
+        \item \textbf{id} \emph{identyfikator} - informuje klienta, że został mu przydzielony podany \emph{identyfikator}, który powinien zostać wyświetlony na ekranie w celu jego identyfikacji,
+        \item \textbf{vnc} \emph{host} \emph{port} \emph{offset\_x} \emph{offset\_y} - wysyła klientowi parametry przygotowanego dla niego połączenia VNC i informuje o położeniu ekranu klienta względem początku wirtualnego pulpitu. Ta wartość jest używana do poprawnego ustawiania kursora na ekranie klienta.
+      \end{itemize}
+
+      Klient wysyła do serwera tylko jeden typ wiadomości:
+      \begin{itemize}[nolistsep]
+        \item \textbf{resolution} \emph{szerokość} \emph{wysokość} - informuje serwer o dostępnej na kliencie rozdzielczości ekranu w pikselach,
+      \end{itemize}
+
+    \subsubsection{Komunikacja multicastowa}
+
+      Do rozgłaszania adresu IP serwera oraz wysyłania aktualizacji pozycji kursora używamy 8-bajtowych datagramów UDP:
+      \begin{itemize}[nolistsep]
+        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna X kursora
+        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna Y kursora
+      \end{itemize}
+
+  \vfill
+
+\section{Organizacja pracy}
+
+  \subsection{Podział prac}
+
+    \textbf{Prace wykonane wspólnie}
+    \begin{itemize}[noitemsep]
+      \item analiza istniejących rozwiązań rozwiązujących podobny problem
+      \item opracowanie modelu komunikacji klient-serwer umożliwiającego automatyczną konfigurację serwera
+      \item opracowanie rozwiązania usprawniającego synchronizację ruchu kursora na ekranie klienta
+      \item dokumentacja projektu
+    \end{itemize}
+
+    \noindent
+    \textbf{Miłosz Łakomy}
+    \begin{itemize}[noitemsep]
+      \item opracowanie prototypowej wersji aplikacji
+      \item stworzenie skryptów upraszczających konfigurację wczesnej wersji projektu
+      \item zaprojektowanie i implementacja skryptu serwera
+    \end{itemize}
+
+    \noindent
+    \textbf{Marcin Radomski}
+    \begin{itemize}[noitemsep]
+      \item zlokalizowanie błędu w x11vnc i stworzenie łatki
+      \item zaprojektowanie i implementacja skryptu klienta
+      \item opracowanie prototypu klienta przeglądarkowego
+    \end{itemize}
+
+  \subsection{Proces}
+
+    Zastosowaliśmy iteracyjny model prac: w danym momencie nie skupialiśmy się na kompletnym rozwiązaniu całego projektu, ale wyznaczaliśmy sobie cel trochę przybliżający nas do ostatecznego produktu. Nie ustalaliśmy ścisłych terminów zakończenia iteracji, chociaż założyliśmy, że pojedyncza iteracja kończąca się funkcjonalnym prototypem nie powinna trwać dłużej niż 3-4 miesiące. Ponieważ repozytorium projektu znajduje się na Githubie, dla wygody użyliśmy mechanizmu \"issues\" do zarządzania zadaniami do wykonania.
+
+    Aby zapewnić zgodność powstającego produktu z oczekiwaniami klienta, kontaktowaliśmy się z nim na bieżąco, prezentując mu nasze pomysły i aktualny stan prac nad projektem. Pozwoliło to na szybkie wyjaśnianie pojawiających się wątpliwości i jasne sprecyzowanie wymagań.
+
+    \subsubsection{Iteracja 1}
+
+      Pierwszą iterację poświęciliśmy w całości na dogłębne zapoznanie się z problemem, analizę sposobu działania alternatywnych aplikacji oraz stworzenie prototypu. Działał on dużo lepiej niż się tego spodziewaliśmy, więc w tym momencie zdecydowaliśmy się kontynuować prace nad tym rozwiązaniem.
+
+      Największym problemem w tym momencie były regularnie pojawiające się czarne prostokąty, widoczne na zdjęciu \ref{It1VideoTest}. Poza tym, szybkość odświeżania kursora myszy była niewystarczająca - dowiedzieliśmy się, że żeby aplikacja nie utrudniała pracy, potrzebujemy innego niż VNC mechanizmu aktualizacji jego pozycji.
+
+      \img{it1_2.jpg}{[iteracja 1] główna część pulpitu widoczna na ekranie laptopa}{It1Test1}
+      \img{it1_3.jpg}{[iteracja 1] kontynuacja pulpitu laptopa na górnej części 24-segmentowego ekranu}{It1Test2}
+
+    \subsubsection{Iteracja 2}
+
+      \label{sec:x11vncBug}
+      Jednym z większych problemów, z którymi uporaliśmy się w ramach drugiej iteracji, było pozbycie się problemu czarnych prostokątów. Okazało się, że używany przez nas serwer x11vnc zaznacza obszary znajdujące się poza poprawnym obszarem pulpitu i pomija ich wysyłanie. Feralne prostokąty okazały się być wynikiem błędu w przeliczaniu koordynatów wspomnianych obszarów.
+
+      Stworzyliśmy więc poprawkę \cite{x11vncPatch}, dołączyliśmy do niej opis problemu i wysłaliśmy pull request \cite{x11vncPullRequest} do autorów x11vnc. Po kilku dniach został on zaakceptowany, a łatka trafiła do głównej gałęzi repozytorium projektu.
+
+      \img{it2_1.jpg}{[iteracja 2] test załatanej wersji x11vnc}{It2Test1}
+
+      Zaczęliśmy też pracować nad uproszczeniem konfiguracji, gdyż prototyp wymagał ręcznego uruchamiania aplikacji z terminala.
+
+      Dodatkowo, zainteresowaliśmy się też projektem Guacamole \cite{Guacamole} - aplikacji pozwalającej użyć przeglądarki internetowej jako klienta VNC.
+
+    \subsubsection{Iteracja 3}
+
+      W tej iteracji zajęliśmy się stworzeniem skryptów umożliwiających proste podłączanie komputerów klienckich. Zaprojektowaliśmy system składający się z aplikacji klienckiej oraz serwerowej, umożliwiający automatyczne wykrywanie obecności serwera projektu w sieci oraz konfigurację połączenia z nim. Uprościło to konfigurację do tego stopnia, że użycie projektu sprowadziło się właściewie do uruchomienia skryptów klienta i serwera na odpowiednich maszynach.
+
+    W trakcie tej iteracji powstał również prototyp modułu serwera umożliwiający podłączanie klientów przeglądarkowych z użyciem Guacamole. Został on zaprojektowany w taki sposób, aby mógł być używany równolegle z częścią obsługująca standardowe  klienty. Implementacja okazała się być jednak nietrywialna i powstały prototyp nie działał na tyle niezawodnie, żeby mógł stać się częścią projektu. Kolejnym z problemów było znaczne zwiększenie zależności aplikacji serwerowej. Po konsultacji z klientem i ustaleniu, że nie jest to niezbędna część aplikacji postanowiliśmy pozostawić ten moduł w fazie prototypu, nie dodając go do finalnej wersji aplikacji.
+
+    \subsubsection{Iteracja 4}
+      Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacji oraz uzupełnianie dokumentacji projektu.
+
+    \vfill
+
+\section{Wyniki projektu}
+
+  \subsection{Artefakty}
+
+    W ramach projektu powstały dwa programy w Pythonie:
+
+    \vspace{3mm}
+
+    \textbf{Aplikacja kliencka:}
+    \begin{itemize}[noitemsep,nolistsep]
+      \item wykrywa ruch multicastowy pochodzący od serwera w celu jego zlokalizowania,
+      \item łączy się z wykrytym serwerem,
+      \item używa klienta VNC do wyświetlenia części pulpitu serwera.
+    \end{itemize}
+
+    \vspace{3mm}
+
+    \textbf{Aplikacja serwerowa:}
+    \begin{itemize}[noitemsep,nolistsep]
+      \item rozgłasza swoją obecność w sieci komunikatami multicastowymi,
+      \item przyjmuje połączenia klientów,
+      \item przydziela każdemu klientowi część pulpitu, powiększając go w razie potrzeby,
+      \item dla każdego klienta uruchamia serwer VNC wysyłający mu obraz z przydzielonej części pulpitu.
+    \end{itemize}
+
+    \vspace{3mm}
+
+    Gotową aplikację przetestowaliśmy w laboratorium 1.18 Katedry Informatyki AGH, podłączając się do sieci zawierającej 4 komputery sterujące obrazem wyświetlanym na 24-monitorowym ekranie. Sprawdzaliśmy wydajność naszego rozwiązania, wyświetlając na ekranie przykładowy film. Efekt zaprezentowaliśmy również klientowi, który zgodnie z nami stwierdził, że efekt jest zadowalający.
+
+  \subsection{Propozycje dalszych prac}
+
+    \begin{itemize}
+
+      \item żeby projekt był naprawdę użyteczny, powinniśmy stworzyć paczki instalacyjne dla popularnych dystrybucji Linuksa, lub nawet opracować system automatycznie budujący je z repozytorium projektu.
+
+      \item dużym krokiem w stronę zwiększenia wygody użytkowania projektu byłoby stworzenie graficznego interfejsu umożliwiającego ustawiania położenia ekranów klientów przez ich przeciągania. Byłoby to przydatne zwłaszcza w przypadku konfiguracji składających się z wielu klientów.
+
+      \item kolejnym istotnym, lecz niestety nietrywialnym w implementacji usprawnieniem byłoby umożliwienie uruchamiania serwera na maszynach z kartami graficznymi innych popularnych producentów. Wymagałoby to jednak sporej ilości pracy nad upsrawienieniem ich sterowników.
+
+      \item w przypadku ekranów o dużej powierzchni pożądane może być skalowanie obrazu w celu zwiększenia wydajności transmisji. Na wystarczająco dużych konfiguracjach zmniejszenie faktycznej rozdzielczości jest zauważalne dużo trudniej niż mała ilość wyświetlanych klatek na sekundę.
+
+      \item interesującą możliwością jest wykorzystanie projektu Guacamole, co pozwoliłoby na zredukowanie zależności klienta do przeglądarki internetowej z obsługą HTML5 kosztem bardziej skomplikowanej architektury serwera. Podczas prac na projektem powstał co prawda prototyp tego rozwiązania, ale z powodu trudności technicznych oraz nietrywialnej konfiguracji wszystkich zależności tej wersji aplikacji zdecydowaliśmy się go porzucić.
+
+    \end{itemize}
+
+    \vfill
+
+\pagebreak
+\begin{thebibliography}{9}
+
+  \bibitem{ProjMaxiVista}
+    Strona projektu MaxiVista: \url{http://maxivista.com}
+
+  \bibitem{ProjZoneScreen}
+    Strona projektu ZoneSceen: \url{http://zoneos.com/zonescreen.htm}
+
+  \bibitem{ProjAirDisplay}
+    Strona projektu AirDisplay: \url{http://avatron.com/applications/air-display}
+
+  \bibitem{ProjXDMX}
+    Oryginalna strona projektu XDMX: \url{http://dmx.sourceforge.net} \\
+    Aktualne repozytorium: \url{http://cgit.freedesktop.org/xorg/lib/libdmx/}
+
+  \bibitem{ProjParaView}
+    Strona projektu ParaView: \url{http://www.paraview.org/}
+
+  \bibitem{x11vncProj}
+    Repozytorium projektu x11vnc: \url{https://github.com/LibVNC/libvncserver}
+
+  \bibitem{x11vncPatch}
+    Łatka jest dostępna pod adresem \url{https://gist.github.com/dextero/bd2e22292a08417673e4} oraz na repozytorium projektu (plik \emph{x11vnc-blackout-clip-fix.patch}).
+
+  \bibitem{x11vncPullRequest}
+    \url{https://github.com/LibVNC/libvncserver/pull/4}.
+
+  \bibitem{Guacamole}
+    \url{http://www.guac-dev.org}
+
+\end{thebibliography}
+
+\bibliography{Bibliografia}
+
+\end{document}
