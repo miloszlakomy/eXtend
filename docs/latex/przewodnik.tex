@@ -137,7 +137,7 @@
 
       \item \textbf{Xdmx} - Distributed Multihead X \cite{ProjXDMX}
 
-        Open-sourcowy projekt oparty na hierarchii serwerów X - jeden "główny" (front-end) i wiele "podrzędnych" (back-end). Był to projekt, z którym początkowo wiązaliśmy największe nadzieje: w końcu był stworzony z myślą o linuksie i X11. Próby jego użycia jednak spełzły na niczym - okazało się, że projekt na Sourceforge nie jest aktualizowany od 10 lat i brakuje informacji o tym, że jego repozytorium zostało przeniesione na freedesktop.org/xorg. Brakuje aktualnej dokumentacji, aktualizacje pojawiają się niezwykle rzadko, a co gorsza sam projekt do obsługi wielu monitorów korzysta z rozszerzenia Xinerama, które zostało de facto zastąpione przez RandR. Mimo usilnych prób nie udało nam się doprowadzić Xdmx do działania.
+        Open-sourcowy projekt oparty na hierarchii serwerów X - jeden ``główny'' (front-end) i wiele ``podrzędnych'' (back-end). Był to projekt, z którym początkowo wiązaliśmy największe nadzieje: w końcu był stworzony z myślą o linuksie i X11. Próby jego użycia jednak spełzły na niczym - okazało się, że projekt na Sourceforge nie jest aktualizowany od 10 lat i brakuje informacji o tym, że jego repozytorium zostało przeniesione na freedesktop.org/xorg. Brakuje aktualnej dokumentacji, aktualizacje pojawiają się niezwykle rzadko, a co gorsza sam projekt do obsługi wielu monitorów korzysta z rozszerzenia Xinerama, które zostało de facto zastąpione przez RandR. Mimo usilnych prób nie udało nam się doprowadzić Xdmx do działania.
 
       \item \textbf{ParaView} \cite{ProjParaView}
 
@@ -182,7 +182,7 @@
 
   \subsection{Architektura systemu}
 
-    Prototyp systemu opiera się na sterowniku grafiki xserver-xorg-video-intel do kart graficznych Intela, który udostępnia rozszerzenie o nazwie intel-virtual-output. Pozwala ono na \"przekonanie\" serwera Xorg, że ma on do dyspozycji więcej fizycznych monitorów, niż w rzeczywistości jest do niego podłączonych. Obszary pulpitu nie mieszczące się na fizycznym monitorze maszyny są wysyłane do komputerów klienckich za pomocą protokołu VNC. Rozwiązanie to zakłada, że na komputerach klienckich są zainstalowane klienty VNC.
+    Prototyp systemu opiera się na sterowniku grafiki xserver-xorg-video-intel do kart graficznych Intela, który udostępnia rozszerzenie o nazwie intel-virtual-output. Pozwala ono na ``przekonanie'' serwera Xorg, że ma on do dyspozycji więcej fizycznych monitorów, niż w rzeczywistości jest do niego podłączonych. Obszary pulpitu nie mieszczące się na fizycznym monitorze maszyny są wysyłane do komputerów klienckich za pomocą protokołu VNC. Rozwiązanie to zakłada, że na komputerach klienckich są zainstalowane klienty VNC.
 
     \img{architecture.png}{Architektura aplikacji.}{Arch}
 
@@ -254,7 +254,7 @@
 
   \subsection{Proces}
 
-    Zastosowaliśmy iteracyjny model prac: w danym momencie nie skupialiśmy się na kompletnym rozwiązaniu całego projektu, ale wyznaczaliśmy sobie cel trochę przybliżający nas do ostatecznego produktu. Nie ustalaliśmy ścisłych terminów zakończenia iteracji, chociaż założyliśmy, że pojedyncza iteracja kończąca się funkcjonalnym prototypem nie powinna trwać dłużej niż 3-4 miesiące. Ponieważ repozytorium projektu znajduje się na Githubie, dla wygody użyliśmy mechanizmu \"issues\" do zarządzania zadaniami do wykonania.
+    Zastosowaliśmy iteracyjny model prac: w danym momencie nie skupialiśmy się na kompletnym rozwiązaniu całego projektu, ale wyznaczaliśmy sobie cel trochę przybliżający nas do ostatecznego produktu. Nie ustalaliśmy ścisłych terminów zakończenia iteracji, chociaż założyliśmy, że pojedyncza iteracja kończąca się funkcjonalnym prototypem nie powinna trwać dłużej niż 3-4 miesiące. Ponieważ repozytorium projektu znajduje się na Githubie, dla wygody użyliśmy mechanizmu ``issues'' do zarządzania zadaniami do wykonania.
 
     Aby zapewnić zgodność powstającego produktu z oczekiwaniami klienta, kontaktowaliśmy się z nim na bieżąco, prezentując mu nasze pomysły i aktualny stan prac nad projektem. Pozwoliło to na szybkie wyjaśnianie pojawiających się wątpliwości i jasne sprecyzowanie wymagań.
 
@@ -262,7 +262,7 @@
 
       Pierwszą iterację poświęciliśmy w całości na dogłębne zapoznanie się z problemem, analizę sposobu działania alternatywnych aplikacji oraz stworzenie prototypu. Działał on dużo lepiej niż się tego spodziewaliśmy, więc w tym momencie zdecydowaliśmy się kontynuować prace nad tym rozwiązaniem.
 
-      Największym problemem w tym momencie były regularnie pojawiające się czarne prostokąty, widoczne na zdjęciu \ref{It1VideoTest}. Poza tym, szybkość odświeżania kursora myszy była niewystarczająca - dowiedzieliśmy się, że żeby aplikacja nie utrudniała pracy, potrzebujemy innego niż VNC mechanizmu aktualizacji jego pozycji.
+      Największym problemem w tym momencie były regularnie pojawiające się czarne prostokąty, widoczne na zdjęciu \ref{fig:It1Test2}. Poza tym, szybkość odświeżania kursora myszy była niewystarczająca - dowiedzieliśmy się, że żeby aplikacja nie utrudniała pracy, potrzebujemy innego niż VNC mechanizmu aktualizacji jego pozycji.
 
       \img{it1_2.jpg}{[iteracja 1] główna część pulpitu widoczna na ekranie laptopa}{It1Test1}
       \img{it1_3.jpg}{[iteracja 1] kontynuacja pulpitu laptopa na górnej części 24-segmentowego ekranu}{It1Test2}
@@ -288,8 +288,6 @@
 
     \subsubsection{Iteracja 4}
       Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacji oraz uzupełnianie dokumentacji projektu.
-
-    \vfill
 
 \section{Wyniki projektu}
 
@@ -318,7 +316,7 @@
 
     \vspace{3mm}
 
-    Gotową aplikację przetestowaliśmy w laboratorium 1.18 Katedry Informatyki AGH, podłączając się do sieci zawierającej 4 komputery sterujące obrazem wyświetlanym na 24-monitorowym ekranie. Sprawdzaliśmy wydajność naszego rozwiązania, wyświetlając na ekranie przykładowy film. Efekt zaprezentowaliśmy również klientowi, który zgodnie z nami stwierdził, że efekt jest zadowalający.
+    Gotową aplikację przetestowaliśmy w laboratorium 1.18 Katedry Informatyki AGH, podłączając się do sieci zawierającej 4 komputery sterujące obrazem wyświetlanym na 24-monitorowym ekranie. Sprawdzaliśmy wydajność naszego rozwiązania, wyświetlając na ekranie przykładowy film. Działanie zaprezentowaliśmy również klientowi, który zgodnie z nami stwierdził, że efekt jest zadowalający.
 
   \subsection{Propozycje dalszych prac}
 
@@ -364,10 +362,10 @@
     Łatka jest dostępna pod adresem \url{https://gist.github.com/dextero/bd2e22292a08417673e4} oraz na repozytorium projektu (plik \emph{x11vnc-blackout-clip-fix.patch}).
 
   \bibitem{x11vncPullRequest}
-    \url{https://github.com/LibVNC/libvncserver/pull/4}.
+    Utworzona przez nas, wcielona do projektu x11vnc łatka: \url{https://github.com/LibVNC/libvncserver/pull/4}.
 
   \bibitem{Guacamole}
-    \url{http://www.guac-dev.org}
+    Strona projektu Guacamole: \url{http://www.guac-dev.org}
 
 \end{thebibliography}
 
