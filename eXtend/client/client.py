@@ -73,7 +73,7 @@ parser.add_argument('-w', '--vnc-passwd-file',
                     default='',
                     help='path to the file containing a password used to '
                          'authenticate with the VNC server. If not specified, '
-                         'no password will be used.')
+                         'default password will be used.')
 parser.add_argument('-i', '--interface',
                     action='store',
                     dest='interface',

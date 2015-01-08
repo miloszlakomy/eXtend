@@ -11,9 +11,9 @@
 \section{Skrypt klienta}
 
   \textbf{Sposób użycia:}
-  \texttt{client.py [ opcje... ]}
+  \texttt{./client.py [ opcje... ]}
 
-  \subsection{Dostępne opcje:}
+  \subsection{Dostępne opcje}
   \begin{itemize}
     \item \texttt{-h, -{}-help}
 
@@ -41,7 +41,7 @@
 
     \item \texttt{-w \emph{PLIK}, -{}-vnc-passwd-file \emph{PLIK}}
 
-      Ustawia ścieżkę do \emph{PLIK}u zawierającego hasło używane do autentykacji w serwerze VNC. W przypadku pominięcia tej opcji klient będzie łączył się bez hasła.
+      Ustawia ścieżkę do \emph{PLIK}u zawierającego hasło używane do autentykacji w serwerze VNC. W przypadku pominięcia tej opcji zostanie użyty nowo utworzony w katalogu domowym użytkownika plik \emph{.eXtend\_vncPwd} z domyślną zawartością \emph{lubieplacki}.
 
     \item \texttt{-i \emph{INTERFEJS}, -{}-interface \emph{INTERFEJS}}
 
@@ -62,7 +62,7 @@
   \textbf{Sposób użycia:}
   \texttt{server.py [ opcje... ]}
 
-  \subsection{Dostępne opcje:}
+  \subsection{Dostępne opcje}
 
   \begin{itemize}
     \item \texttt{-h, -{}-help}
@@ -87,7 +87,7 @@
 
     \item \texttt{-P \emph{PLIK\_HASŁA}, -{}-password-file \emph{PLIK\_HASŁA}}
 
-      Ustawia ścieżkę do pliku z hasłem przekazywaną do serwera vnc. Jego zawartość zostanie użyta jako hasło dostępu do VNC; w przypadku pominięcia tej opcji zostanie użyty nowo utworzony w katalogu domowym użytkownika plik \emph{.eXtend\_vncPwd} z domyślną zawartością \emph{lubieplacki}.
+      Ustawia ścieżkę do pliku z hasłem przekazywanego do serwera VNC. Jego zawartość zostanie użyta jako hasło dostępu do VNC; w przypadku pominięcia tej opcji zostanie użyty nowo utworzony w katalogu domowym użytkownika plik \emph{.eXtend\_vncPwd} z domyślną zawartością \emph{lubieplacki}.
 
     \item \texttt{-l \emph{PLIK\_Z\_LOGAMI}, -{}-log-file \emph{PLIK\_Z\_LOGAMI}}
 
@@ -95,7 +95,7 @@
 
     \item \texttt{-m, -{}-manual-arrange}
 
-      Wymuś ręczną konfigurację pozycji ekranów klientów (przy użyciu \texttt{./server.py -a}). W przypadku pominięcia tej opcji, kolejni podłączający się klienci będą układani po prawej stronie ostatnio podłączonego ekranu.
+      Wymuś ręczną konfigurację pozycji ekranów klientów (przy użyciu \texttt{./server.py -a}). W przypadku pominięcia tej opcji, kolejni podłączający się klienci będą układani na prawo od istniejących ekranów
 
     \item \texttt{-a \emph{UKŁAD}, -{}-arrange \emph{UKŁAD}}
 
@@ -116,7 +116,7 @@
 
     \textbf{UWAGA}: wysyłane komunikaty multicastowe mają ustawioną na sztywno wartość TTL równą 2.
 
-    Po przyjęciu połączenia klienta automatycznie jest mu przypisywany unikalny identyfikator oraz współrzędne wyświetlanej przez niego części pulpitu. Z każdym przychodzącym połączeniem tworzony jest też kolejny wirtualny ekran, symulujący podłączenie monitora o rozdzielczości równej tej deklarowanej przez klienta. Automatyczna konfiguracja pozycji ekranów zakłada, że każdy następny jest ustawiany na prawo od poprzedniego.
+    Po przyjęciu połączenia klienta automatycznie jest mu przypisywany unikalny identyfikator oraz współrzędne wyświetlanej przez niego części pulpitu. Z każdym przychodzącym połączeniem tworzony jest też kolejny wirtualny ekran, symulujący podłączenie monitora o rozdzielczości równej tej deklarowanej przez klienta. Automatyczna konfiguracja pozycji ekranów zakłada, że każdy następny jest ustawiany na prawo od istniejących ekranów.
     W przypadku utraty połączenia z klientem przyporządkowany mu wirtualny ekran jest usuwany.
 
     \subsubsection{\label{sec:ManualConfig}Ręczna konfiguracja układu ekranów}
