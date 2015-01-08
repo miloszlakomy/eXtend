@@ -1,0 +1,125 @@
+\input{header.tex}
+
+\begin{document}
+\subtitle{Dokumentacja użytkownika}
+\maketitle
+
+\tableofcontents
+\vfill
+\pagebreak
+
+\section{Skrypt klienta}
+
+  \textbf{Sposób użycia:}
+  \texttt{client.py [ opcje... ]}
+
+  \subsection{Dostępne opcje:}
+  \begin{itemize}
+    \item \texttt{-h, -{}-help}
+
+      Wyświetla listę dostępnych opcji wraz z ich opisem, po czym kończy działanie.
+
+    \item \texttt{-g \emph{ADRES\_GRUPY}, -{}-multicast-group \emph{ADRES\_GRUPY}}
+
+      Ustawia adres grupy multicastowej, na którą serwer wysyła koordynaty myszy. W przypadku pominięcia tej opcji użyta jest wartość zmiennej środowiskowej \emph{EXTEND\_MCAST\_GROUP} lub 224.0.126.93 jeżeli zmienna \emph{EXTEND\_MCAST\_GROUP} nie jest ustawiona.
+
+    \item \texttt{-p \emph{PORT}, -{}-port \emph{PORT}}
+
+      Ustawia numer portu używanego do komunikacji z serwerem. W przypadku pominięcia tej opcji użyta zostanie wartość zmiennej środowiskowej \emph{EXTEND\_PORT} lub 0x7e5d (32349) jeżeli zmienna \emph{EXTEND\_PORT} nie jest ustawiona.
+
+    \item \texttt{-l \emph{PLIK\_LOCK}, -{}-lock-file \emph{PLIK\_LOCK}}
+
+      Ustawia ścieżkę do pliku \emph{lock}. W przypadku pominięcia tej opcji plik ten będzie miał nazwę \emph{.eXtend-client.lock} i zostanie umieszczony w katalogu domowym użytkownika (określonym za pomocą zmiennej środowiskowej \emph{HOME}) lub \emph{/tmp/} jeżeli zmienna \emph{HOME} nie jest ustawiona.
+
+    \item \texttt{-s \emph{ADRES\_SERWERA}, -{}-server-ip \emph{ADRES\_SERWERA}}
+
+      Podczas startu próbuje połączyć się z serwerem o podanym adresie, zamiast łączyć się z nadawcą pierwszej otrzymanej wiadomości multicastowej.
+
+    \item \texttt{-v \emph{KOMENDA\_KLIENTA\_VNC}, -{}-vnc-client-cmd \emph{KOMENDA\_KLIENTA\_VNC}}
+
+       Ustawia komendę shella używaną do uruchomienia klienta VNC. Słowa \emph{HOST} i \emph{PORT} zostaną zastąpione odpowiednio adresem IP i portem używanym do połączenia do serwera VNC. Wartość domyślna: \texttt{vncviewer -fullscreen -viewonly HOST::PORT -autopass}.
+
+    \item \texttt{-w \emph{PLIK}, -{}-vnc-passwd-file \emph{PLIK}}
+
+      Ustawia ścieżkę do \emph{PLIK}u zawierającego hasło używane do autentykacji w serwerze VNC. W przypadku pominięcia tej opcji klient będzie łączył się bez hasła.
+
+    \item \texttt{-i \emph{INTERFEJS}, -{}-interface \emph{INTERFEJS}}
+
+      Ustawia nazwę interfejsu sieciowego, na którym klient nasłuchuje komunikatów multicastowych. W przypadku pominięcia tej opcji klient będzie nasłuchiwał na wszystkich dostępnych interfejsach.
+
+  \end{itemize}
+
+  \subsection{Opis działania}
+    Skrypt klienta po uruchomieniu zaczyna nasłuchiwać na komunikaty multicastowe wysyłane na skonfigurowany \emph{ADRES\_GRUPY} i \emph{PORT}. Po otrzymaniu pierwszej wiadomości interpretuje nadawcę jako serwer eXtend i próbuje połączyć się z \emph{PORT}em nadawcy po TCP w celu przeprowadzenia autokonfiguracji. W przypadku pomyślnego nawiązania połączenia otrzymuje identyfikator, który jest wyświetlany w terminalu w celu ułatwienia ręcznej konfiguracji (patrz: \ref{sec:ManualConfig} Ręczna konfiguracja układu ekranów). Po zakończeniu konfiguracji po stronie serwera klient uruchamia w trybie pełnoekranowym aplikację klienta VNC, która rozpoczyna wyświetlanie fragmentu pulpitu serwera. Od tego momentu klient tylko steruje pozycją kursora, przesuwając go na odpowiednie współrzędne otrzymane z serwera (uwzględniając własną pozycję względem lewego górnego rogu pulpitu serwera).
+
+    W przypadku utraty połączenia klient wraca w stan nasłuchiwania na komunikaty multicastowe. Może on też zrestartować klienta VNC, jeśli układ ekranów klientów ulegnie zmianie.
+
+    Aby zapobiec przypadkowemu uruchomieniu kilku procesów klienta jednocześnie, podczas uruchamiania sprawdzana jest obecność pliku \emph{PLIK\_LOCK}, który jest usuwany przy wyjściu z programu.
+
+
+\section{Skrypt serwera}
+
+  \textbf{Sposób użycia:}
+  \texttt{server.py [ opcje... ]}
+
+  \subsection{Dostępne opcje:}
+
+  \begin{itemize}
+    \item \texttt{-h, -{}-help}
+
+      Wyświetla listę dostępnych opcji wraz z ich opisem, po czym kończy działanie.
+
+    \item \texttt{-s, -{}-start}
+
+      Uruchamia w tle proces serwera, który rozpoczyna transmisję koordynatów myszy na ustawiony adres multicastowy i nasłuchuje przychodzących połączeń od klientów.
+
+    \item \texttt{-S, -{}-stop}
+
+      Zatrzymuje proces serwera.
+
+    \item \texttt{-i \emph{INTERFEJS}, -{}-interfaces \emph{INTERFEJS}}
+
+      Ustawia interfejs sieciowy, na który będą wysyłane komunikaty multicastowe. Można użyć tej opcji wielokrotnie, aby nadawać na kilku interfejsach. W przypadku pominięcia tej opcji komunikaty będą wysyłane na domyślny interfejs sieciowy.
+
+    \item \texttt{-p \emph{PORT}, -{}-port \emph{PORT}}
+
+      Ustawia numer portu używanego do przyjmowania połączeń klientów, jak również docelowego portu komunikatów multicastowych. W przypadku pominięcia tej opcji zostanie użyta magiczna liczba 0x7e5d (32349).
+
+    \item \texttt{-P \emph{PLIK\_HASŁA}, -{}-password-file \emph{PLIK\_HASŁA}}
+
+      Ustawia ścieżkę do pliku z hasłem przekazywaną do serwera vnc. Jego zawartość zostanie użyta jako hasło dostępu do VNC; w przypadku pominięcia tej opcji zostanie użyty nowo utworzony w katalogu domowym użytkownika plik \emph{.eXtend\_vncPwd} z domyślną zawartością \emph{lubieplacki}.
+
+    \item \texttt{-l \emph{PLIK\_Z\_LOGAMI}, -{}-log-file \emph{PLIK\_Z\_LOGAMI}}
+
+      Ustawia plik zawierający logi generowane przez proces serwera. W przypadku pominięcia tej opcji zostanie użyty plik \emph{.eXtend-server\_0X\textbf{NUMER\_PORTU}.log} w katalogu domowym użytkownika.
+
+    \item \texttt{-m, -{}-manual-arrange}
+
+      Wymuś ręczną konfigurację pozycji ekranów klientów (przy użyciu \texttt{./server.py -a}). W przypadku pominięcia tej opcji, kolejni podłączający się klienci będą układani po prawej stronie ostatnio podłączonego ekranu.
+
+    \item \texttt{-a \emph{UKŁAD}, -{}-arrange \emph{UKŁAD}}
+
+      Ustawia ekran klienta o podanym identyfikatorze na odpowiednich współrzędnych. Przykładowo: \texttt{./server.py -a '0 123 456'} spowoduje, że klient o identyfikatorze \emph{0} zacznie wyświetlać fragment ekranu, którego lewy górny róg znajduje się na współrzędnych \emph{123, 456}. Rozmiar wyświetlanego fragmentu jest zależny od rozdzielczości monitora klienta.
+
+    \item \texttt{-lu, -{}-list-unarranged}
+
+      Wypisuje listę podłączonych klientów, którym jeszcze nie zostały przyporządkowane żadne współrzędne ekranu.
+
+    \item \texttt{-la, -{}-list-arranged}
+
+      Wypisuje listę podłączonych i skonfigurowanych klientów, którzy wyświetlają obraz przyporządkowanych im fragmentów pulpitu.
+
+  \end{itemize}
+
+  \subsection{Opis działania}
+    Uruchomienie serwera z opcją \texttt{-{}-start} spowoduje utworzenie działającego w tle procesu obsługującego połączenia klientów. Jednocześnie serwer zaczyna rozgłaszać swoją obecność w sieci lokalnej, wysyłająć na skonfigurowane \emph{INTERFEJS}y komunikaty multicastowe.
+
+    \textbf{UWAGA}: wysyłane komunikaty multicastowe mają ustawioną na sztywno wartość TTL równą 2.
+
+    Po przyjęciu połączenia klienta automatycznie jest mu przypisywany unikalny identyfikator oraz współrzędne wyświetlanej przez niego części pulpitu. Z każdym przychodzącym połączeniem tworzony jest też kolejny wirtualny ekran, symulujący podłączenie monitora o rozdzielczości równej tej deklarowanej przez klienta. Automatyczna konfiguracja pozycji ekranów zakłada, że każdy następny jest ustawiany na prawo od poprzedniego.
+    W przypadku utraty połączenia z klientem przyporządkowany mu wirtualny ekran jest usuwany.
+
+    \subsubsection{\label{sec:ManualConfig}Ręczna konfiguracja układu ekranów}
+      Uruchomienie serwera z opcją \texttt{-{}-manual-arrange} powoduje zawieszenie wątku obsługującego połączenie klienta w oczekiwaniu na przypisanie mu współrzędnych. Ustawia się je za pomocą opcji \texttt{-{}-arrange}. \texttt{-{}-list-unarranged} pozwala wyświetlić listę klientów oczekujących na konfigurację.
+
+\end{document}
