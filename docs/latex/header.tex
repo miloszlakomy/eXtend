@@ -7,6 +7,7 @@
 \usepackage{xcolor}
 \usepackage{adjustbox}
 \usepackage{enumitem}
+\usepackage{float}
 
 \graphicspath{ {img/} }
 
@@ -20,13 +21,25 @@
     citecolor={dark-green}
 }
 
-\newcommand{\img}[3]{
-  \begin{figure}
+\newcommand{\insertimg}[5]{
+  \begin{figure}#5
     \centering
-    \includegraphics[width=0.9\textwidth]{#1}
+    \includegraphics[width=#4\textwidth]{#1}
     \caption{#2}
     \label{fig:#3}
   \end{figure}
+}
+
+\newcommand{\img}[3]{
+  \insertimg{#1}{#2}{#3}{0.9}{}
+}
+
+\newcommand{\scaledimg}[4]{
+  \insertimg{#1}{#2}{#3}{#4}{}
+}
+
+\newcommand{\fiximg}[3]{
+  \insertimg{#1}{#2}{#3}{0.9}{[H]}
 }
 
 \newcommand{\subtitle}[1]{
