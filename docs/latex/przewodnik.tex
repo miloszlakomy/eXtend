@@ -89,23 +89,22 @@
     Do transmisji obrazu użyliśmy VNC, a konkretnie projektu x11vnc \cite{x11vncProj}. Dzięki skorzystaniu ze sprawdzonego protokołu zyskaliśmy pewność, że wydajność rozwiązania jest zadowalająca. Dodatkowym plusem okazało się to, że jest to projekt open-source, co dało nam możliwość odnalezienia i poprawienia napotkanego przez nas błędu (patrz: \ref{sec:x11vncBug}).
 
     \vfill
+    \img{architecture.png}{Architektura aplikacji.}{Arch}
 
   \subsection{Architektura systemu}
 
-    Prototyp systemu opiera się na sterowniku grafiki xserver-xorg-video-intel do kart graficznych Intela, który udostępnia rozszerzenie o nazwie intel-virtual-output. Pozwala ono na ``przekonanie'' serwera Xorg, że ma on do dyspozycji więcej fizycznych monitorów, niż w rzeczywistości jest do niego podłączonych. Obszary pulpitu nie mieszczące się na fizycznym monitorze maszyny są wysyłane do komputerów klienckich za pomocą protokołu VNC. Rozwiązanie to zakłada, że na komputerach klienckich są zainstalowane klienty VNC.
+    Prototyp systemu opiera się na sterowniku grafiki xserver-xorg-video-intel do kart graficznych Intela, który udostępnia rozszerzenie o nazwie intel-virtual-output. Pozwala ono na ``przekonanie'' serwera Xorg, że ma on do dyspozycji więcej fizycznych monitorów, niż w rzeczywistości jest do niego podłączonych. Obszary pulpitu nie mieszczące się na fizycznym monitorze maszyny są wysyłane do komputerów klienckich za pomocą protokołu VNC. Rozwiązanie to zakłada, że na komputerach klienckich są zainstalowane klienty VNC. Schemat architektury systemu jest przedstawiony na rysunku \ref{fig:Arch}.
 
-    \img{architecture.png}{Architektura aplikacji.}{Arch}
+    \fiximg{eXtend-app-overview.png}{Komunikacja klient-serwer.}{Comm}
 
-    Projekt eXtend składa się z aplikacji serwerowej oraz klienckiej. Używają one dwóch niezależnych kanałów komunikacji:
+    Projekt eXtend składa się z aplikacji serwerowej oraz klienckiej. Używają one dwóch niezależnych kanałów komunikacji, przedstawionych na rysunku \ref{fig:Comm}:
     \begin{itemize}
       \item połączenia konfiguracyjnego używającego TCP - w ten sposób klient i serwer negocjują parametry wirtualnego ekranu, identyfikator klienta oraz parametry połączenia VNC. Wiadomości są przesyłane z użyciem prostego tekstowego protokołu opracowanego przez nas,
+
       \item multicastowych pakietów UDP - serwer nadaje w ten sposób komunikaty o zmianie pozycji kursora w celu zminimalizowania zauważalnego opóźnienia między ruchem myszy a aktualizacją jego pozycji. Dodatkowo niepodłączone klienty po otrzymaniu tego typu pakietu traktują nadawcę jako serwer i próbują nawiązać połączenie konfiguracyjne po TCP. Ponieważ potrzebowaliśmy rozwiązania pozwalającego na minimalizację opóźnienia ruchów myszą względem aktualizacji pozycji kursora na ekranie, ilość pojawiających się w sieci pakietów ze współrzędnymi myszy mogła stać się całkiem spora. Użycie pakietów multicastowych pozwoliło nam uniezależnić szerokość pasma wykorzystywanego do transmisji pozycji kursora od ilości klientów podłączonych do serwera.
     \end{itemize}
 
     Dodatkowo po podłączeniu klienta nawiązywane jest kolejne połączenie (VNC) do transmisji obrazu, który ma zostać wyświetlony na kliencie.
-
-    \img{eXtend-app-overview.png}{Komunikacja klient-serwer.}{Comm}
-    \img{eXtend-client-sequence.png}{Działanie aplikacji klienta}{ClientSeq}
 
   \subsection{Protokoły komunikacyjne}
 
@@ -132,7 +131,10 @@
         \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna Y kursora.
       \end{itemize}
 
-  \vfill
+    Kolejność wysyłanych w obie strony komunikatów przedstawia rysunek \ref{fig:ClientSeq}.
+    \vfill
+
+    \fiximg{eXtend-client-sequence.png}{Działanie aplikacji klienta}{ClientSeq}
 
 \section{Organizacja pracy}
 
@@ -170,7 +172,7 @@
 
     \subsubsection{Iteracja 1}
 
-      Pierwszą iterację poświęciliśmy w całości na dogłębne zapoznanie się z problemem, analizę sposobu działania alternatywnych aplikacji oraz stworzenie prototypu. Działał on dużo lepiej niż się tego spodziewaliśmy, więc w tym momencie zdecydowaliśmy się kontynuować prace nad tym rozwiązaniem.
+      Pierwszą iterację poświęciliśmy w całości na dogłębne zapoznanie się z problemem, analizę sposobu działania alternatywnych aplikacji oraz stworzenie prototypu. Działał on dużo lepiej niż się tego spodziewaliśmy, więc w tym momencie zdecydowaliśmy się kontynuować prace nad tym rozwiązaniem. Efekt jaki uzyskaliśmy przedstawiają zdjęcia \ref{fig:It1Test1} oraz \ref{fig:It1Test2}.
 
       Największym problemem w tym momencie były regularnie pojawiające się czarne prostokąty, widoczne na zdjęciu \ref{fig:It1Test2}. Poza tym, szybkość odświeżania kursora myszy była niewystarczająca - dowiedzieliśmy się, że żeby aplikacja nie utrudniała pracy, potrzebujemy innego niż VNC mechanizmu aktualizacji jego pozycji.
 
@@ -182,7 +184,7 @@
       \label{sec:x11vncBug}
       Jednym z większych problemów, z którymi uporaliśmy się w ramach drugiej iteracji, było pozbycie się problemu czarnych prostokątów. Okazało się, że używany przez nas serwer x11vnc zaznacza obszary znajdujące się poza poprawnym obszarem pulpitu i pomija ich wysyłanie. Feralne prostokąty okazały się być wynikiem błędu w przeliczaniu koordynatów wspomnianych obszarów.
 
-      Stworzyliśmy więc poprawkę \cite{x11vncPatch}, dołączyliśmy do niej opis problemu i wysłaliśmy pull request \cite{x11vncPullRequest} do autorów x11vnc. Po kilku dniach został on zaakceptowany, a łatka trafiła do głównej gałęzi repozytorium projektu.
+      Stworzyliśmy więc poprawkę \cite{x11vncPatch}, dołączyliśmy do niej opis problemu i wysłaliśmy pull request \cite{x11vncPullRequest} do autorów x11vnc. Po kilku dniach został on zaakceptowany, a łatka trafiła do głównej gałęzi repozytorium projektu. Efekt działania poprawki jest widoczny na zdjęciu \ref{fig:ItTest1}.
 
       \img{it2_1.jpg}{[iteracja 2] test załatanej wersji x11vnc}{It2Test1}
 
