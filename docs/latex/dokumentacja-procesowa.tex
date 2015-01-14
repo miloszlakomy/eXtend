@@ -91,9 +91,7 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
     \img{it2_vnc_bug_screen1.png}{W lewym górnym rogu maszyna wirtalna, odbierająca przez VNC obraz z kwadratu o rozmiarze 2000x2000 widocznego po prawej stronie.}{It2VncBugScreen1}
     \img{it2_vnc_bug1.png}{Konfiguracja sprawiająca problemy - obraz na obszarze zaznaczonym na czerwono nie wyświetla się.}{It2VncBug1}
     \img{it2_vnc_bug2.png}{Kolejna problematyczna konfiguracja}{It2VncBug2}
-    \img{it2_vnc_bug3.png}{Kolejna problematyczna konfiguracja}{It2VncBug3}
     \img{it2_vnc_bug_screen2.png}{Problemy wydają się występować również w przypadku wysyłania obrazu strumieniem MPEG2-TS.}{It2VncBugScreen2}
-    \img{it2_vnc_bug_screen3.png}{Układ outputów w niewykorzystanej przestrzeni wpływa na kształt niewidocznego obszaru.}{It2VncBugScreen3}
     \img{it2_vnc_bug_screen4.png}{Układ outputów w niewykorzystanej przestrzeni wpływa na kształt niewidocznego obszaru.}{It2VncBugScreen4}
 
     Obserwacje:
@@ -119,7 +117,6 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
     Stworzyliśmy poprawkę \cite{x11vncPatch} i wysłaliśmy pull request z opisem problemu do autorów x11vnc \cite{x11vncPullRequest}. Po kilku dniach został on zaakceptowany, a łatka trafiła do głównej gałęzi repozytorium projektu.
 
     \vfill
-    \img{it2_1.jpg}{[iteracja 2] test załatanej wersji x11vnc}{It2Test1}
     \img{it2_2.jpg}{[iteracja 2] test załatanej wersji x11vnc}{It2Test2}
     \pagebreak
     W połowie maja przetestowaliśmy załataną wersję serwera VNC w laboratorium 1.18. Nie zaobserwowaliśmy występującego wcześniej błędu: czarne prostokąty bezpowrotnie zniknęły, co można zobaczyć na rysunku \ref{fig:It2Test2}. Rzuciły się nam za to w oczy problemy z wydajnością przesyłania dużej powierzchni pulpitu z wysoką częstotliwością.

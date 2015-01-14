@@ -184,7 +184,7 @@
       \label{sec:x11vncBug}
       Jednym z większych problemów, z którymi uporaliśmy się w ramach drugiej iteracji, było pozbycie się problemu czarnych prostokątów. Okazało się, że używany przez nas serwer x11vnc zaznacza obszary znajdujące się poza poprawnym obszarem pulpitu i pomija ich wysyłanie. Feralne prostokąty okazały się być wynikiem błędu w przeliczaniu koordynatów wspomnianych obszarów.
 
-      Stworzyliśmy więc poprawkę \cite{x11vncPatch}, dołączyliśmy do niej opis problemu i wysłaliśmy pull request \cite{x11vncPullRequest} do autorów x11vnc. Po kilku dniach został on zaakceptowany, a łatka trafiła do głównej gałęzi repozytorium projektu. Efekt działania poprawki jest widoczny na zdjęciu \ref{fig:ItTest1}.
+      Stworzyliśmy więc poprawkę \cite{x11vncPatch}, dołączyliśmy do niej opis problemu i wysłaliśmy pull request \cite{x11vncPullRequest} do autorów x11vnc. Po kilku dniach został on zaakceptowany, a łatka trafiła do głównej gałęzi repozytorium projektu. Efekt działania poprawki jest widoczny na zdjęciu \ref{fig:It2Test1}.
 
       \img{it2_1.jpg}{[iteracja 2] test załatanej wersji x11vnc}{It2Test1}
 
@@ -231,6 +231,8 @@
     Gotową aplikację przetestowaliśmy w laboratorium 1.18 Katedry Informatyki AGH, podłączając się do sieci zawierającej 4 komputery sterujące obrazem wyświetlanym na 24-monitorowym ekranie. Sprawdzaliśmy wydajność naszego rozwiązania, wyświetlając na ekranie przykładowy film. Działanie zaprezentowaliśmy również klientowi, który zgodnie z nami stwierdził, że efekt jest zadowalający.
 
   \subsection{Propozycje dalszych prac}
+
+    Chociaż utworzony przez nas projekt jest w pełni działającym rozwiązaniem, w trakcie prac wpadliśmy na sporo pomysłów na jego dalsze usprawnienie:
 
     \begin{itemize}
 
