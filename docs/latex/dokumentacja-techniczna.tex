@@ -65,9 +65,9 @@
   \subsection{Moduły i wykorzystywane biblioteki}
     Klient eXtend korzysta z kilku zewnętrznych bibliotek:
     \begin{itemize}
-      \item \textbf{PyUserInput} - \url{https://github.com/SavinaRoja/PyUserInput} - jako interfejs serwera X11: do pobierania rozdzielczości ekranu oraz ustawiania pozycji kursora otrzymanej od serwera,
-      \item \textbf{netifaces} - \url{https://pypi.python.org/pypi/netifaces} - do ograniczenia ilości interfejsów sieciowych, na których nasłuchuje klient,
-      \item \textbf{pyfiglet} - \url{https://github.com/pwaller/pyfiglet} - do czytelnego wyświetlania identyfikatora klienta otrzymanego od serwera w terminalu.
+      \item \textbf{PyUserInput} \cite{PyUserInput} - jako interfejs serwera X11: do pobierania rozdzielczości ekranu oraz ustawiania pozycji kursora otrzymanej od serwera,
+      \item \textbf{netifaces} \cite{Netifaces} - do ograniczenia ilości interfejsów sieciowych, na których nasłuchuje klient,
+      \item \textbf{pyfiglet} \cite{Pyfiglet}  - do czytelnego wyświetlania w terminalu identyfikatora klienta otrzymanego od serwera.
     \end{itemize}
 
     Oprócz nich, wykorzystywany jest też moduł \textbf{message\_buffer} współdzielony z serwerem. Służy on do dzielenia strumienia danych otrzymanego od serwera przez połączenie konfiguracyjne na pojedyncze wiadomości. Reszta kodu zamyka się w pliku \textbf{client.py} - cała logika mieści się w klasie EXtendClient.
@@ -77,7 +77,7 @@
     \img{eXtend-client-sequence.png}{Działanie aplikacji klienta}{ClientSeq}
 
     Po nawiązaniu połączenia TCP jest ono utrzymywane do czasu zamknięcia aplikacji klienckiej lub serwerowej. W przypadku otrzymania kolejnej wiadomości z danymi serwera VNC klient odbierający obraz jest uruchamiany ponownie z nowymi parametrami. Jeśli połączenie VNC zostanie zerwane, klient eXtend próbuje nawiązać je ponownie. Podobnie, w przypadku utraty połączenia z serwerem eXtend aplikacja wraca do punktu wyjścia, oczekując na otrzymanie pakietu ze współrzędnymi myszy.
-    Dzianie aplikacji klienta przedstawia rysunek \ref{fig:ClientSeq}.
+    Działanie aplikacji klienta przedstawia rysunek \ref{fig:ClientSeq}.
 
 \section{Część serwerowa}
 
@@ -86,15 +86,15 @@
     Serwer eXtend korzysta z zewnętrznych bibliotek:
 
     \begin{itemize}
-      \item \textbf{pymouse} - \url{https://github.com/SavinaRoja/PyUserInput} - do pobierania pozycji myszy na ekranie serwera, multicastowanej następnie do klientów,
-      \item \textbf{netifaces} - \url{https://pypi.python.org/pypi/netifaces} - do określenia interfejsów sieciowych, na których pracuje aplikacja.
+      \item \textbf{pymouse} \cite{PyUserInput} - do pobierania pozycji myszy na ekranie serwera, multicastowanej następnie do klientów,
+      \item \textbf{netifaces} \cite{Netifaces} - do określenia interfejsów sieciowych, na których pracuje aplikacja.
     \end{itemize}
 
     Główna część kodu źródłowego serwera znajduje się w pliku \textbf{server.py}. Odwołuje się on do kilku pomocniczych modułów:
 
     \begin{itemize}
-      \item \textbf{vnc.py} - dostarczającego api do kontrolowania zewnętrznej aplikacji serwera vnc (x11vnc), oraz inicjalizowania potrzebnych mu outputów xrandr,
-      \item \textbf{cvt.py} - dostarczającego api do aplikacji cvt, obliczającej VESA CVT modelines, potrzebnych do obsługi xrandr,
+      \item \textbf{vnc.py} - dostarczającego API do kontrolowania zewnętrznej aplikacji serwera vnc (x11vnc), oraz inicjalizowania potrzebnych mu outputów xrandr,
+      \item \textbf{cvt.py} - dostarczającego API do aplikacji cvt, obliczającej VESA CVT modelines, potrzebnych do obsługi xrandr,
       \item \textbf{parse\_xrandr.py} - konwertującego wyjście polecenia xrandr (bez argumentów) ze strumienia znaków do postaci zrozumiałej dla Pythona,
       \item \textbf{runAndWait.py} - upraszczającego funkcję subprocess.Popen, poprzez rezygnację z jej równoległej natury i natychmiastowe wywołanie metody .wait na utworzonym procesie.
     \end{itemize}
@@ -103,19 +103,19 @@
 
   \subsection{Sposób działania}
 
-    Serwer eXtend jest daemonem. Dla każdej pary (użytkownik, port), dla której zostanie uruchomiony może istnieć tylko jedna jego instancja. Proces odpowiadający pierwszemu wywołaniu skryptu \textbf{server.py} zostaje daemonem, kolejne wywołania służą tylko przekazaniu ich parametrów wywołania do daemona. Po przekazaniu daemonowi argumentu \textbf{--start}, zaczyna on nadawać współrzędne kursora w grupie multicastowej i nasłuchiwać łączących się klientów. Dla każdego zdalnego klienta, który połączy się z daemonem serwera, zostaje utworzony nowy wirtualny output xrandr, odpowiadający mu serwer vnc i klientowi zostaje wysłany adres tego serwera.
+    Serwer eXtend jest daemonem. Dla każdej pary (użytkownik, port), dla której zostanie uruchomiony może istnieć tylko jedna jego instancja. Proces odpowiadający pierwszemu wywołaniu skryptu \textbf{server.py} zostaje daemonem, kolejne wywołania służą tylko przekazaniu ich parametrów wywołania do daemona. Po przekazaniu daemonowi argumentu \textbf{-{}-start}, zaczyna on nadawać współrzędne kursora w grupie multicastowej i nasłuchiwać łączących się klientów. Dla każdego zdalnego klienta, który połączy się z daemonem serwera, zostaje utworzony nowy wirtualny output xrandr, odpowiadający mu serwer vnc i klientowi zostaje wysłany adres tego serwera.
 
 \section{Prototyp klienta przeglądarkowego}
 
   \img{architecture-guacamole.png}{Architektura wersji z klientem przeglądarkowym}{GuacArch}
 
-  W tej wersji systemu użyliśmy dodatkowo projektu Guacamole (\url{http://guac-dev.org/}). Jest on swojego rodzaju proxy, pobierającym obraz otrzymany przez VNC i wysyłającym go po sieci w sposób umożliwiający wyświetlenie w przeglądarce. Dzięki temu jesteśmy w stanie skorzystać z wyświetlacza dowolnego urządzenia z przeglądarką obsługującą HTML5. Pozwala to całkowicie pominąć etap instalacji aplikacji klienckiej. Architekturę tej wersji systemu przedstawia rysunek \ref{fig:GuacArch}.
+  W tej wersji systemu użyliśmy dodatkowo projektu Guacamole \cite{Guacamole}. Jest on swojego rodzaju proxy, pobierającym obraz otrzymany przez VNC i wysyłającym go po sieci w sposób umożliwiający wyświetlenie w przeglądarce. Dzięki temu jesteśmy w stanie skorzystać z wyświetlacza dowolnego urządzenia z przeglądarką obsługującą HTML5. Pozwala to całkowicie pominąć etap instalacji aplikacji klienckiej. Architekturę tej wersji systemu przedstawia rysunek \ref{fig:GuacArch}.
 
   Niestety, dzieje się to kosztem skomplikowania serwerowej części projektu. Aplikacja serwera powiększa się o moduły:
 
   \begin{itemize}
-    \item \textbf{web\_server.py} - moduł importowany z głównego skryptu serwera po uruchomieniu z opcją \textbf{--start-web}, zawierający całą logikę związaną z obsługą klientów przeglądarkowych,
-    \item \textbf{websocket.py} - klasa opakowująca standardowy socket w sposób umożliwiający łatwą komunikację z klientem przeglądarkowym zgodnie z protokołem WebSocket opisanym w RFC 6455 (\url{http://tools.ietf.org/html/rfc6455}),
+    \item \textbf{web\_server.py} - moduł importowany z głównego skryptu serwera po uruchomieniu z opcją \textbf{-{}-start-web}, zawierający całą logikę związaną z obsługą klientów przeglądarkowych,
+    \item \textbf{websocket.py} - klasa opakowująca standardowy socket w sposób umożliwiający łatwą komunikację z klientem przeglądarkowym zgodnie z protokołem WebSocket opisanym w RFC 6455 \cite{RFC6455},
     \item \textbf{guacamole.py} - moduł odpowiedzialny za rekonfigurację Guacamole w momencie podłączenia klienta za pomocą strony internetowej.
   \end{itemize}
 
@@ -132,7 +132,27 @@
   Kolejność przesyłanych wiadomości przedstawia rysunek \ref{fig:GuacComm}.
 
   Z powodu trudności technicznych oraz nietrywialnej konfiguracji wszystkich zależności tej wersji aplikacji powstał jedynie jej prototyp na jednej z używanych maszyn. Dalszy rozwój projektu w tym kierunku nie będzie wchodził w zakres tej pracy inżynierskiej.
+  \vfill
 
   \fiximg{eXtend-web-client-sequence.png}{Komunikacja między elementami systemu w przypadku podłączenia klienta za pomocą przeglądarki internetowej}{GuacComm}
+
+\begin{thebibliography}{9}
+
+  \bibitem{PyUserInput}
+    Repozytorium projektu PyUserInput: \url{https://github.com/SavinaRoja/PyUserInput}
+
+  \bibitem{Netifaces}
+    Repozytorium projektu Netifaces: \url{https://pypi.python.org/pypi/netifaces}
+
+  \bibitem{Pyfiglet}
+    Repozytorium projektu PyFiglet: \url{https://github.com/pwaller/pyfiglet}
+
+  \bibitem{Guacamole}
+    Strona projektu Guacamole: \url{http://www.guac-dev.org}
+
+  \bibitem{RFC6455}
+    Specyfikacja protokołu WebSocket: \url{http://tools.ietf.org/html/rfc6455}
+
+\end{thebibliography}
 
 \end{document}
