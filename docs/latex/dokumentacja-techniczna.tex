@@ -21,19 +21,17 @@
 
   \img{architecture.png}{Architektura aplikacji.}{Arch}
 
-  Serwer, na którym działa nasz projekt, korzysta z systemu operacyjnego Linux i serwera Xorg do wyświetlania grafiki. Prototyp systemu opiera się na sterowniku grafiki xserver-xorg-video-intel do kart graficznych Intela, który udostępnia rozszerzenie o nazwie intel-virtual-output. Pozwala ono na \"przekonanie\" serwera Xorg, że ma on do dyspozycji więcej fizycznych monitorów, niż w rzeczywistości jest do niego podłączonych. Obszary pulpitu nie mieszczące się na fizycznym monitorze maszyny są wysyłane do komputerów klienckich za pomocą protokołu VNC. Rozwiązanie to zakłada, że na komputerach klienckich są zainstalowane klienty VNC.
+  Serwer, na którym działa nasz projekt, korzysta z systemu operacyjnego Linux i serwera Xorg do wyświetlania grafiki. Prototyp systemu opiera się na sterowniku grafiki xserver-xorg-video-intel do kart graficznych Intela, który udostępnia rozszerzenie o nazwie intel-virtual-output. Pozwala ono na \"przekonanie\" serwera Xorg, że ma on do dyspozycji więcej fizycznych monitorów, niż w rzeczywistości jest do niego podłączonych. Obszary pulpitu nie mieszczące się na fizycznym monitorze maszyny są wysyłane do komputerów klienckich za pomocą protokołu VNC. Rozwiązanie to zakłada, że na komputerach klienckich są zainstalowane klienty VNC. Schemat architektury systemu jest przedstawiony na rysunku \ref{fig:Arch}.
 
   \subsection{Komunikacja klient-serwer}
 
-    Projekt eXtend składa się z aplikacji serwerowej oraz klienckiej. Używają one dwóch niezależnych kanałów komunikacji:
+    Projekt eXtend składa się z aplikacji serwerowej oraz klienckiej. Używają one dwóch niezależnych kanałów komunikacji, przedstawionych na rysunku \ref{fig:Comm}:
     \begin{itemize}
       \item połączenia konfiguracyjnego używającego TCP - w ten sposób klient i serwer negocjują parametry wirtualnego ekranu, identyfikator klienta oraz parametry połączenia VNC. Wiadomości są przesyłane z użyciem prostego tekstowego protokołu opisanego poniżej.
       \item multicastowych pakietów UDP - serwer nadaje w ten sposób komunikaty o zmianie pozycji kursora w celu zminimalizowania zauważalnego opóźnienia między ruchem myszy a aktualizacją jego pozycji. Dodatkowo niepodłączone klienty po otrzymaniu tego typu pakietu traktują nadawcę jako serwer i próbują nawiązać połączenie konfiguracyjne po TCP.
     \end{itemize}
 
     Dodatkowo po podłączeniu klienta nawiązywane jest kolejne połączenie (VNC) do transmisji obrazu, który ma zostać wyświetlony na kliencie.
-
-    \img{eXtend-app-overview.png}{Komunikacja klient-serwer.}{Comm}
 
   \subsection{Protokoły komunikacyjne}
 
@@ -51,6 +49,8 @@
       \begin{itemize}
         \item \textbf{resolution} \emph{szerokość} \emph{wysokość} - informuje serwer o dostępnej na kliencie rozdzielczości ekranu w pikselach,
       \end{itemize}
+
+    \fiximg{eXtend-app-overview.png}{Komunikacja klient-serwer.}{Comm}
 
     \subsubsection{Komunikacja multicastowa}
 
@@ -77,6 +77,7 @@
     \img{eXtend-client-sequence.png}{Działanie aplikacji klienta}{ClientSeq}
 
     Po nawiązaniu połączenia TCP jest ono utrzymywane do czasu zamknięcia aplikacji klienckiej lub serwerowej. W przypadku otrzymania kolejnej wiadomości z danymi serwera VNC klient odbierający obraz jest uruchamiany ponownie z nowymi parametrami. Jeśli połączenie VNC zostanie zerwane, klient eXtend próbuje nawiązać je ponownie. Podobnie, w przypadku utraty połączenia z serwerem eXtend aplikacja wraca do punktu wyjścia, oczekując na otrzymanie pakietu ze współrzędnymi myszy.
+    Dzianie aplikacji klienta przedstawia rysunek \ref{fig:ClientSeq}.
 
 \section{Część serwerowa}
 
@@ -108,7 +109,7 @@
 
   \img{architecture-guacamole.png}{Architektura wersji z klientem przeglądarkowym}{GuacArch}
 
-  W tej wersji systemu użyliśmy dodatkowo projektu Guacamole (\url{http://guac-dev.org/}). Jest on swojego rodzaju proxy, pobierającym obraz otrzymany przez VNC i wysyłającym go po sieci w sposób umożliwiający wyświetlenie w przeglądarce. Dzięki temu jesteśmy w stanie skorzystać z wyświetlacza dowolnego urządzenia z przeglądarką obsługującą HTML5. Pozwala to całkowicie pominąć etap instalacji aplikacji klienckiej.
+  W tej wersji systemu użyliśmy dodatkowo projektu Guacamole (\url{http://guac-dev.org/}). Jest on swojego rodzaju proxy, pobierającym obraz otrzymany przez VNC i wysyłającym go po sieci w sposób umożliwiający wyświetlenie w przeglądarce. Dzięki temu jesteśmy w stanie skorzystać z wyświetlacza dowolnego urządzenia z przeglądarką obsługującą HTML5. Pozwala to całkowicie pominąć etap instalacji aplikacji klienckiej. Architekturę tej wersji systemu przedstawia rysunek \ref{fig:GuacArch}.
 
   Niestety, dzieje się to kosztem skomplikowania serwerowej części projektu. Aplikacja serwera powiększa się o moduły:
 
@@ -128,8 +129,10 @@
     \item \textbf{reauth} \emph{URL\_do\_wylogowania} \emph{URL\_do\_zalogowania} \emph{login} \emph{hasło} - używane do autentykacji we front-endzie Guacamole po jego restarcie, w celu uzyskania dostępu do obrazu wysyłanego przez VNC.
   \end{itemize}
 
-  \img{eXtend-web-client-sequence.png}{Komunikacja między elementami systemu w przypadku podłączenia klienta za pomocą przeglądarki internetowej}{GuacComm}
+  Kolejność przesyłanych wiadomości przedstawia rysunek \ref{fig:GuacComm}.
 
   Z powodu trudności technicznych oraz nietrywialnej konfiguracji wszystkich zależności tej wersji aplikacji powstał jedynie jej prototyp na jednej z używanych maszyn. Dalszy rozwój projektu w tym kierunku nie będzie wchodził w zakres tej pracy inżynierskiej.
+
+  \fiximg{eXtend-web-client-sequence.png}{Komunikacja między elementami systemu w przypadku podłączenia klienta za pomocą przeglądarki internetowej}{GuacComm}
 
 \end{document}
