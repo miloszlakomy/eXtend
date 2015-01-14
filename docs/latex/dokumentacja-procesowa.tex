@@ -108,8 +108,6 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
 
     \vfill
 
-    Wygląda na to, że niezależnie od współrzędnych przesyłanego wycinka, prostokąt o szerokości równej szerokości Outputu 0 i offsecie 0x<output0\_y\_resolution> względem lewego górnego roku wycinka ma problemy z wyświeltaniem. Co ciekawe, obszar który teoretycznie nie jest przydzielony do żadnego outputu, a nie znajduje się w feralnym prostokącie, \textbf{jest} streamowany - widać taskbar Gnome, którego być tam nie powinno, a dodatkowo okna nie mają problemu z wyświetlaniem:
-
     Zastanawiające jest to, że screenshoty działają bez zarzutu. Przeanalizowaliśmy część kodu x11vnc i stworzyliśmy prostą aplikację korzystającą z funkcji XGetImage/XGetSubImage, wykorzystywanych również przez serwer VNC. Od strony sterownika wszystko wydaje się być bez zarzutu - funkcje zwracają to co powinny. Dalsza analiza kodu x11vnc pokazała, że serwer VNC z jakiegoś powodu nie chce oznaczać fragmentów ekranu z feralnego czarnego prostokąta jako obszar, który powinien być odrysowany. W najlepszym wypadku wysyła on jedynie małe kawałki, które pokazują się przy przesuwaniu okien nad problematycznym obszarem.
 
     Po jakichś dwóch tygodniach poszukiwania zakończyły się sukcesem. Okazało się, że x11vnc zaznacza obszary znajdujące się poza poprawnym obszarem pulpitu i pomija ich wysyłanie. Niestety, przy wyznaczaniu ich współrzędnych kompletnie ignoruje wartości podane przez używany przez nas parametr \emph{-clip}! W połączeniu z tym, że w całym x11vnc używane są współrzędne względem clipping regionu spowodowało widoczne powyżej problemy.
