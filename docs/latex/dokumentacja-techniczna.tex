@@ -11,9 +11,9 @@
 \section{Słownik}
 
   \begin{itemize}
-    \item \textbf{Klient eXtend} - część projektu eXtend przeznaczona do uruchamiania na klientach. Obejmuje skrypt w Pythonie wraz z niezbędnymi bibliotekami oraz aplikację klienta VNC.
-    \item \textbf{Serwer eXtend} - część projektu eXtend uruchamiana na serwerze. Obejmuje skrypt w Pythonie, niezbędne biblioteki, aplikację serwera VNC (x11vnc) oraz sterownik xserver-xorg-video-intel.
-    \item \textbf{Klient} - maszyna wykorzystywana przez serwer jako dodatkowy monitor rozszerzający dostępną powierzchnię pulpitu.
+    \item \textbf{Klient eXtend} - część projektu eXtend przeznaczona do uruchamiania na klientach. Obejmuje skrypt w Pythonie wraz z niezbędnymi bibliotekami oraz aplikację klienta VNC,
+    \item \textbf{Serwer eXtend} - część projektu eXtend uruchamiana na serwerze. Obejmuje skrypt w Pythonie, niezbędne biblioteki, aplikację serwera VNC (x11vnc) oraz sterownik xserver-xorg-video-intel,
+    \item \textbf{Klient} - maszyna wykorzystywana przez serwer jako dodatkowy monitor rozszerzający dostępną powierzchnię pulpitu,
     \item \textbf{Serwer} - komputer zarządzający połączeniem z klientami i wysyłający im obraz do wyświetlenia.
   \end{itemize}
 
@@ -27,7 +27,7 @@
 
     Projekt eXtend składa się z aplikacji serwerowej oraz klienckiej. Używają one dwóch niezależnych kanałów komunikacji, przedstawionych na rysunku \ref{fig:Comm}:
     \begin{itemize}
-      \item połączenia konfiguracyjnego używającego TCP - w ten sposób klient i serwer negocjują parametry wirtualnego ekranu, identyfikator klienta oraz parametry połączenia VNC. Wiadomości są przesyłane z użyciem prostego tekstowego protokołu opisanego poniżej.
+      \item połączenia konfiguracyjnego używającego TCP - w ten sposób klient i serwer negocjują parametry wirtualnego ekranu, identyfikator klienta oraz parametry połączenia VNC. Wiadomości są przesyłane z użyciem prostego tekstowego protokołu opisanego poniżej,
       \item multicastowych pakietów UDP - serwer nadaje w ten sposób komunikaty o zmianie pozycji kursora w celu zminimalizowania zauważalnego opóźnienia między ruchem myszy a aktualizacją jego pozycji. Dodatkowo niepodłączone klienty po otrzymaniu tego typu pakietu traktują nadawcę jako serwer i próbują nawiązać połączenie konfiguracyjne po TCP.
     \end{itemize}
 
@@ -47,7 +47,7 @@
 
       Klient wysyła do serwera tylko jeden typ wiadomości:
       \begin{itemize}
-        \item \textbf{resolution} \emph{szerokość} \emph{wysokość} - informuje serwer o dostępnej na kliencie rozdzielczości ekranu w pikselach,
+        \item \textbf{resolution} \emph{szerokość} \emph{wysokość} - informuje serwer o dostępnej na kliencie rozdzielczości ekranu w pikselach.
       \end{itemize}
 
     \fiximg{eXtend-app-overview.png}{Komunikacja klient-serwer.}{Comm}
@@ -56,8 +56,8 @@
 
       Do rozgłaszania adresu IP serwera oraz wysyłania aktualizacji pozycji kursora używamy 8-bajtowych datagramów UDP:
       \begin{itemize}
-        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna X kursora
-        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna Y kursora
+        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna X kursora,
+        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna Y kursora.
       \end{itemize}
 
 \section{Część kliencka}
