@@ -22,7 +22,7 @@ Nie mogliśmy też zapomnieć o wydajności - gdyby okazało się, że nasze roz
 
 \section{Proces}
 
-Zastosowaliśmy iteracyjny model prac: w danym momencie nie skupialiśmy się na kompletnym rozwiązaniu całego projektu, ale wyznaczaliśmy sobie cel trochę przybliżający nas do ostatecznego produktu. Nie ustalaliśmy ścisłych terminów zakończenia iteracji, chociaż założyliśmy, że pojedyncza iteracja kończąca się funkcjonalnym prototypem nie powinna trwać dłużej niż 3-4 miesiące. Ponieważ repozytorium projektu znajduje się na Githubie, dla wygody użyliśmy mechanizmu "issues" do zarządzania zadaniami do wykonania.
+Zastosowaliśmy iteracyjny model prac: w danym momencie nie skupialiśmy się na kompletnym rozwiązaniu całego projektu, ale wyznaczaliśmy sobie cel trochę przybliżający nas do ostatecznego produktu. Nie ustalaliśmy ścisłych terminów zakończenia iteracji, chociaż założyliśmy, że pojedyncza iteracja kończąca się funkcjonalnym prototypem nie powinna trwać dłużej niż 3-4 miesiące. Ponieważ repozytorium projektu znajduje się na Githubie, dla wygody użyliśmy mechanizmu ``issues'' do zarządzania zadaniami do wykonania.
 
 Aby zapewnić zgodność powstającego produktu z oczekiwaniami klienta, kontaktowaliśmy się z nim na bieżąco, prezentując mu nasze pomysły i aktualny stan prac nad projektem. Pozwoliło to na szybkie wyjaśnianie pojawiających się wątpliwości i jasne sprecyzowanie wymagań.
 
@@ -40,6 +40,7 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
 
     \begin{itemize}
       \item \textbf{MaxiVista} - \url{http://maxivista.com}
+
         Jest to projekt bliźniaczo podobny do naszego. Umożliwia podpięcie dodatkowych komputerów po sieci z użyciem TCP/IP. Nie satysfakcjonuje on nas ze względu na pewne poważne ograniczenia:
         \begin{itemize}
           \item na maszynie będącej serwerem musi być zainstalowany system Windows, klientem może być Windows lub Mac,
@@ -50,33 +51,41 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
         \end{itemize}
 
       \item \textbf{ZoneScreen} - \url{http://zoneos.com/zonescreen.htm}
+
         Projekt analogiczny do MaxiVista, ale darmowy. Serwer działa tylko pod Windowsem, ale klientem może być dowolny system, na którym można uruchomić klienta VNC. Obsługuje więcej niż jednego klienta - autor nie podaje górnego ograniczenia.
 
       \item \textbf{AirDisplay} - \url{http://avatron.com/applications/air-display}
+
         Podobny do MaxiVista i ZoneScreen. Można podłączyć maksymalnie 4 ekrany, chociaż informacja na stronie mówi, że działa to tylko na Macach. Klientami mogą być urządzenia z Androidem, Windowsem, OS X-em lub iOSem.
 
       \item \textbf{Xdmx} - Distributed Multihead X - \url{http://dmx.sourceforge.net}, \url{http://cgit.freedesktop.org/xorg/lib/libdmx/}
+
         Open-sourcowy projekt oparty na hierarchii serwerów X - jeden "główny" (front-end) i wiele "podrzędnych" (back-end). Był to projekt, z którym początkowo wiązaliśmy największe nadzieje: w końcu był stworzony z myślą o linuksie i X11. Próby jego użycia jednak spełzły na niczym - okazało się, że projekt na Sourceforge nie jest aktualizowany od 10 lat i brakuje informacji o tym, że jego repozytorium zostało przeniesione na freedesktop.org/xorg. Brakuje aktualnej dokumentacji, aktualizacje pojawiają się niezwykle rzadko, a co gorsza sam projekt do obsługi wielu monitorów korzysta z rozszerzenia Xinerama, które zostało de facto zastąpione przez RandR. Mimo usilnych prób nie udało nam się doprowadzić Xdmx do działania.
 
       \item \textbf{ParaView} - \url{http://www.paraview.org/}
+
         ParaView jest obsługującą rozproszone wielomonitorowe konfiguracje aplikacją do wizualizacji danych w 3D. Jest to program używany w laboratorium w Katedrze Informatyki, ale niestety nie można użyć go jako narzędzia pozwalającego na transmisję fragmentu pulpitu.
     \end{itemize}
+
+    \img{it1_1.jpg}{[iteracja 1] test transmisji wideo}{It1VideoTest}
 
   \subsection{Analiza wykonalności i stworzenie prototypu}
     Analiza wspomnianych rozwiązań podsunęła nam pewien pomysł: gdybyśmy byli w stanie przekonać serwer X, że ma dostępną większą powierzchnię pulpitu niż to jest w rzeczywistości, moglibyśmy wysłać niewidoczną część pulpitu po sieci używając przykładowo VNC. Po przeszukaniu zasobów Internetu okazało się, że jest to jak najbardziej możliwe: standardowy sterownik grafiki dla kart Intela daje możliwość tworzenia wirtualnych monitorów (virtual output). Co prawda ogranicza nam to ilość sprzętu, na którym możemy uruchomić nasz projekt, jednak karty Intela są całkiem popularne i nie mieliśmy żadnych problemów ze znalezieniem odpowiedniego komputera.
 
+    \fixscaledimg{it1_2.jpg}{[iteracja 1] główna część pulpitu widoczna na ekranie laptopa}{It1Test1}{0.75}
+    \fixscaledimg{it1_3.jpg}{[iteracja 1] kontynuacja pulpitu laptopa na górnej części 24-segmentowego ekranu}{It1Test2}{0.75}
+
     Po przebrnięciu przez sporą ilość dokumentacji, opcji konfiguracyjnych serwera X i samego sterownika xserver-xorg-video-intel udało nam się skonfigurować wirtualne pulpity na dwóch maszynach działających pod kontrolą systemu operacyjnego Ubuntu (w wersjach 13.04 i 13.10). Po tym zapoznaliśmy się z konfiguracją serwera VNC (x11vnc, \cite{x11vncProj}), co wystarczyło nam do stworzenia pierwszego prototypu aplikacji.
+    \vfill
 
   \subsection{Spotkanie z klientem - podsumowanie iteracji 1}
     W połowie kwietnia spotkaliśmy się z klientem i zaprezentowaliśmy mu efekt naszych prac. Przeprowadziliśmy test wysyłania obrazu wideo, widocznego na rysunku \ref{fig:It1VideoTest}, oraz statycznego pulpitu (rysunki \ref{fig:It1Test1}, \ref{fig:It1Test2}, \ref{fig:It1Test3}).
 
+    \fiximg{it1_4.jpg}{[iteracja 1] 18 z 24 monitorów podłączonych do laptopa. W tym przypadku obraz z lewej górnej części ekranu z jakiegoś powodu został zduplikowany jako tapeta lewej dolnej części, co jednak nie przeszkadzało w użyciu.}{It1Test3}
+
     Chociaż pojawiło się kilka nieoczekiwanych błędów, prezentację prototypu uznaliśmy za umiarkowany sukces. Działał on dużo lepiej niż się tego spodziewaliśmy, więc w tym momencie zdecydowaliśmy się kontynuować prace nad tym rozwiązaniem. Największym problemem w tym momencie były regularnie pojawiające się czarne prostokąty, widoczne na załączonych zdjęciach (np. rysunek \ref{fig:It1Test2}). Poza tym, szybkość odświeżania kursora myszy była niewystarczająca - dowiedzieliśmy się, że żeby aplikacja nie utrudniała pracy, potrzebujemy innego niż VNC mechanizmu aktualizacji jego pozycji.
 
     \vfill
-    \img{it1_1.jpg}{[iteracja 1] test transmisji wideo}{It1VideoTest}
-    \img{it1_2.jpg}{[iteracja 1] główna część pulpitu widoczna na ekranie laptopa}{It1Test1}
-    \img{it1_3.jpg}{[iteracja 1] kontynuacja pulpitu laptopa na górnej części 24-segmentowego ekranu}{It1Test2}
-    \img{it1_4.jpg}{[iteracja 1] 18 z 24 monitorów podłączonych do laptopa. W tym przypadku obraz z lewej górnej części ekranu z jakiegoś powodu został zduplikowany jako tapeta lewej dolnej części, co jednak nie przeszkadzało w użyciu.}{It1Test3}
     \pagebreak
 
 \section{Iteracja 2}
@@ -85,57 +94,50 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
 
   \subsection{Problem czarnych obszarów w x11vnc}
 
-    W sytuacji, gdy cały pulpit złożony z ekranu laptopa (Output 0) oraz wirtualnych outputów wygląda tak jak na rysunku \ref{fig:It2VncBug1}, zaznaczony na czerwono obszar obserwowany na kliencie wyświetla się jako czarny prostokąt. Efekt ten jest przedstawiony na rysunku \ref{fig:It2VncBugScreen1}.
+    W sytuacji, gdy cały pulpit złożony z ekranu laptopa (Output 0) oraz wirtualnych outputów wygląda tak jak na rysunku \ref{fig:It2VncBug1}, zaznaczony na czerwono obszar obserwowany na kliencie wyświetla się jako czarny prostokąt. Efekt ten jest przedstawiony na rysunku \ref{fig:It2VncBugScreen1}. \\
 
-    \vfill
     \img{it2_vnc_bug_screen1.png}{W lewym górnym rogu maszyna wirtalna, odbierająca przez VNC obraz z kwadratu o rozmiarze 2000x2000 widocznego po prawej stronie.}{It2VncBugScreen1}
-    \img{it2_vnc_bug1.png}{Konfiguracja sprawiająca problemy - obraz na obszarze zaznaczonym na czerwono nie wyświetla się.}{It2VncBug1}
-    \img{it2_vnc_bug2.png}{Kolejna problematyczna konfiguracja}{It2VncBug2}
+    \scaledimg{it2_vnc_bug2.png}{Konfiguracja sprawiająca problemy - obraz na obszarze zaznaczonym na czerwono nie wyświetla się.}{It2VncBug1}{0.7}
     \img{it2_vnc_bug_screen2.png}{Problemy wydają się występować również w przypadku wysyłania obrazu strumieniem MPEG2-TS.}{It2VncBugScreen2}
-    \img{it2_vnc_bug_screen4.png}{Układ outputów w niewykorzystanej przestrzeni wpływa na kształt niewidocznego obszaru.}{It2VncBugScreen4}
 
+    \pagebreak
     Obserwacje:
     \begin{itemize}
       \item prostokąt wydaje się mieć szerokość taką, jak Output 0, a jego górna krawędź jest na tej samej wysokości co dolna krawędź Outputu 0,
       \item problemy z tym obszarem pojawiają się nie tylko przy wysyłaniu obrazu przez VNC, ale też w przypadku MPEG2-TS (rysunek \ref{fig:It2VncBugScreen2}),
       \item instalacja najnowszych sterowników Intela z repozytorium Xorg nie pomogła,
-     \item utworzenie wirtualnego outputu na nieużywanym obszarze powoduje zniknięcie części czarnego prostokąta, co ilustrują rysunki \ref{fig:It2VncBug2}, \ref{fig:It2VncBugScreen4}. Potencjalny workaround - dodać wirtualny output pokrywający cały nieużywany obszar.
+     \item utworzenie wirtualnego outputu na nieużywanym obszarze powoduje zniknięcie części czarnego prostokąta, co ilustruje rysunek \ref{fig:It2VncBugScreen4}. Potencjalny workaround - dodać wirtualny output pokrywający cały nieużywany obszar.
     \end{itemize}
 
-    Wygląda na to, że niezależnie od współrzędnych przesyłanego wycinka, prostokąt o szerokości równej szerokości Outputu 0 i offsecie 0x<output0\_y\_resolution> względem lewego górnego roku wycinka ma problemy z wyświeltaniem. Co ciekawe, obszar który teoretycznie nie jest przydzielony do żadnego outputu, a nie znajduje się w feralnym prostokącie, \textbf{jest} streamowany - widać taskbar Gnome, którego być tam nie powinno, a dodatkowo okna nie mają problemu z wyświetlaniem.
+    \fixscaledimg{it2_vnc_bug_screen4.png}{Układ outputów w niewykorzystanej przestrzeni wpływa na kształt niewidocznego obszaru.}{It2VncBugScreen4}{0.75}
 
+    Wygląda na to, że niezależnie od współrzędnych przesyłanego wycinka, prostokąt o szerokości równej szerokości Outputu 0 i offsecie 0x<output0\_y\_resolution> względem lewego górnego roku wycinka ma problemy z wyświeltaniem. Co ciekawe, obszar który teoretycznie nie jest przydzielony do żadnego outputu, a nie znajduje się w feralnym prostokącie, \textbf{jest} streamowany - widać taskbar Gnome, którego być tam nie powinno, a dodatkowo okna nie mają problemu z wyświetlaniem.
     \vfill
 
     Zastanawiające jest to, że screenshoty działają bez zarzutu. Przeanalizowaliśmy część kodu x11vnc i stworzyliśmy prostą aplikację korzystającą z funkcji XGetImage/XGetSubImage, wykorzystywanych również przez serwer VNC. Od strony sterownika wszystko wydaje się być bez zarzutu - funkcje zwracają to co powinny. Dalsza analiza kodu x11vnc pokazała, że serwer VNC z jakiegoś powodu nie chce oznaczać fragmentów ekranu z feralnego czarnego prostokąta jako obszar, który powinien być odrysowany. W najlepszym wypadku wysyła on jedynie małe kawałki, które pokazują się przy przesuwaniu okien nad problematycznym obszarem.
 
     Po jakichś dwóch tygodniach poszukiwania zakończyły się sukcesem. Okazało się, że x11vnc zaznacza obszary znajdujące się poza poprawnym obszarem pulpitu i pomija ich wysyłanie. Niestety, przy wyznaczaniu ich współrzędnych kompletnie ignoruje wartości podane przez używany przez nas parametr \emph{-clip}! W połączeniu z tym, że w całym x11vnc używane są współrzędne względem clipping regionu spowodowało widoczne powyżej problemy.
 
-    Stworzyliśmy poprawkę, dostępną pod adresem \url{https://gist.github.com/dextero/bd2e22292a08417673e4} i na repozytorium projektu (plik \emph{x11vnc-blackout-clip-fix.patch}).
-
-    Po jakichś dwóch tygodniach poszukiwania zakończyły się sukcesem. Okazało się, że x11vnc zaznacza obszary znajdujące się poza poprawnym obszarem pulpitu i pomija ich wysyłanie. Niestety, przy wyznaczaniu ich współrzędnych kompletnie ignoruje wartości podane przez używany przez nas parametr \emph{-clip}! W połączeniu z tym, że w całym x11vnc używane są współrzędne względem clipping regionu spowodowało widoczne powyżej problemy.
-
     Stworzyliśmy poprawkę \cite{x11vncPatch} i wysłaliśmy pull request z opisem problemu do autorów x11vnc \cite{x11vncPullRequest}. Po kilku dniach został on zaakceptowany, a łatka trafiła do głównej gałęzi repozytorium projektu.
 
     \vfill
-    \img{it2_2.jpg}{[iteracja 2] test załatanej wersji x11vnc}{It2Test2}
+    \fixscaledimg{it2_2.jpg}{[iteracja 2] test załatanej wersji x11vnc}{It2Test2}{0.8}
     \pagebreak
     W połowie maja przetestowaliśmy załataną wersję serwera VNC w laboratorium 1.18. Nie zaobserwowaliśmy występującego wcześniej błędu: czarne prostokąty bezpowrotnie zniknęły, co można zobaczyć na rysunku \ref{fig:It2Test2}. Rzuciły się nam za to w oczy problemy z wydajnością przesyłania dużej powierzchni pulpitu z wysoką częstotliwością.
 
   \subsection{Uproszczenie konfiguracji}
 
-    W celu uproszczenia konfiguracji powstał skrypt basha, automatyzujący konfigurację wirtualnych ekranów i uruchamianie serwera x11vnc. Eksperymentowaliśmy również ze stworzeniem prostego interfejsu graficznego do obsługi tego skryptu (widocznego na rysunkach \ref{fig:It2Test3} oraz \ref{fig:It2Test4}), który jednak później został porzucony z powodu niewielkiej przydatności w porównaniu do ilości wymaganych do zainstalowania bibliotek.
+    W celu uproszczenia konfiguracji powstał skrypt basha, automatyzujący konfigurację wirtualnych ekranów i uruchamianie serwera x11vnc. Eksperymentowaliśmy również ze stworzeniem prostego interfejsu graficznego do obsługi tego skryptu (widocznego na rysunku \ref{fig:It2Test3}), który jednak później został porzucony z powodu niewielkiej przydatności w porównaniu do ilości wymaganych do zainstalowania bibliotek.
 
-    \img{it2_3.jpg}{[iteracja 2] test graficznego interfejsu konfiguracyjnego}{It2Test3}
-    \img{it2_4.jpg}{[iteracja 2] test graficznego interfejsu konfiguracyjnego}{It2Test4}
+    \fixscaledimg{it2_3.jpg}{[iteracja 2] test graficznego interfejsu konfiguracyjnego}{It2Test3}{0.8}
 
   \subsection{Guacamole - przeglądarkowy klient VNC}
 
-    Użycie przeglądarki internetowej w charakterze klienta VNC otworzyłoby przed nami duże możliwości: bylibyśmy w stanie zamienić dowolne urządzenie z w miarę nowoczesną przeglądarką w klienta naszej aplikacji. Pod koniec iteracji 2 zdołaliśmy skonfigurować Guacamole \cite{Guacamole} i przeprowadzić kilka prostych testów. Wyniki (widoczne na rysunkach \ref{fig:It2Guac1} i \ref{fig:It2Guac2}) były obiecujące, więc w kolejnej iteracji poświęciliśmy trochę czasu na rozwinięcie projektu w tym kierunku.
+    Użycie przeglądarki internetowej w charakterze klienta VNC otworzyłoby przed nami duże możliwości: bylibyśmy w stanie zamienić dowolne urządzenie z w miarę nowoczesną przeglądarką w klienta naszej aplikacji. Pod koniec iteracji 2 zdołaliśmy skonfigurować Guacamole \cite{Guacamole} i przeprowadzić kilka prostych testów. Wyniki (rysunek \ref{fig:It2Guac2}) były obiecujące, więc w kolejnej iteracji poświęciliśmy trochę czasu na rozwinięcie projektu w tym kierunku.
+
+    \fiximg{it2_6.jpg}{[iteracja 2] Test Guacamole - obraz z VNC widoczny w przeglądarce}{It2Guac2}
 
     \vfill
-    \img{it2_5.jpg}{[iteracja 2] Test Guacamole - ekran wyboru połączenia VNC}{It2Guac1}
-    \img{it2_6.jpg}{[iteracja 2] Test Guacamole - obraz z VNC widoczny w przeglądarce}{It2Guac2}
-    \pagebreak
 
 \section{Iteracja 3}
 
