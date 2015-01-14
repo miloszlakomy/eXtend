@@ -8,8 +8,8 @@
 \newcommand*{\LangAgh}{Akademia G\'{o}rniczo-Hutnicza\\[2mm] im. Stanis\l{}awa Staszica w Krakowie}
 \newcommand*{\LangFaculty}{Wydzia{\l} Elektrotechniki, Automatyki, Informatyki i Elektroniki\\[2mm] Katedra Informatyki}
 \newcommand*{\LangSupervisor}{Opiekun:}
-\newcommand*{\LangStatementHead}{O\'SWIADCZENIE AUTORA PRACY}
-\newcommand*{\LangStatementBody}{O\'swiadczam, \'swiadomy(-a) odpowiedzialno\'sci karnej za po\'swiadczenie nieprawdy, \.ze niniejszy projekt wykona{\l}em(-am) osobi\'scie i samodzielnie w zakresie opisanym w dalszej cz\k{e}\'sci dokumentu  i \.ze nie korzysta{\l}em(-am) ze \'zr\'ode{\l} innych ni\.z wymienione w dalszej cz\k{e}\'sci dokumentu.}
+\newcommand*{\LangStatementHead}{O\'SWIADCZENIE AUTOR\'OW PRACY}
+\newcommand*{\LangStatementBody}{O\'swiadczamy, \'swiadomi odpowiedzialno\'sci karnej za po\'swiadczenie nieprawdy, \.ze niniejsz\k{a} prac\k{e} wykona{\l}i\'smy osobi\'scie i samodzielnie (w zakresie wyszczeg\'olnionym we wst\k{e}pie) i \.ze nie korzystali\'smy ze \'zr\'ode{\l} innych ni\.z wymienione w pracy.}
 \newcommand*{\LangSignature}{PODPIS}
 \newcommand*{\LangThesisType}{Projekt in\.zynierski}
 }
