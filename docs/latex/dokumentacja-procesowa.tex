@@ -39,7 +39,7 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
     Prace rozpoczęliśmy od przeszukania zasobów Internetu w celu znalezienia już istniejących aplikacji o funkcjonalności podobnej do tej, jaką chcieliśmy osiągnąć. Okazało się, że nie jest dostępny program w pełni spełniający oczekiwania naszego klienta. Trafiliśmy jednak na kilka projektów działających w sposób mniej lub bardziej zbliżony do wymaganego:
 
     \begin{itemize}
-      \item \textbf{MaxiVista} - \url{http://maxivista.com}
+      \item \textbf{MaxiVista} \cite{ProjMaxiVista}
 
         Jest to projekt bliźniaczo podobny do naszego. Umożliwia podpięcie dodatkowych komputerów po sieci z użyciem TCP/IP. Nie satysfakcjonuje on nas ze względu na pewne poważne ograniczenia:
         \begin{itemize}
@@ -50,19 +50,19 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
           \item ilość dostępnych rozdzielczości jest mocno ograniczona.
         \end{itemize}
 
-      \item \textbf{ZoneScreen} - \url{http://zoneos.com/zonescreen.htm}
+      \item \textbf{ZoneScreen} \cite{ProjZoneScreen}
 
         Projekt analogiczny do MaxiVista, ale darmowy. Serwer działa tylko pod Windowsem, ale klientem może być dowolny system, na którym można uruchomić klienta VNC. Obsługuje więcej niż jednego klienta - autor nie podaje górnego ograniczenia.
 
-      \item \textbf{AirDisplay} - \url{http://avatron.com/applications/air-display}
+      \item \textbf{AirDisplay} \cite{ProjAirDisplay}
 
         Podobny do MaxiVista i ZoneScreen. Można podłączyć maksymalnie 4 ekrany, chociaż informacja na stronie mówi, że działa to tylko na Macach. Klientami mogą być urządzenia z Androidem, Windowsem, OS X-em lub iOSem.
 
-      \item \textbf{Xdmx} - Distributed Multihead X - \url{http://dmx.sourceforge.net}, \url{http://cgit.freedesktop.org/xorg/lib/libdmx/}
+      \item \textbf{Xdmx} - Distributed Multihead X \cite{ProjXDMX}
 
         Open-sourcowy projekt oparty na hierarchii serwerów X - jeden "główny" (front-end) i wiele "podrzędnych" (back-end). Był to projekt, z którym początkowo wiązaliśmy największe nadzieje: w końcu był stworzony z myślą o linuksie i X11. Próby jego użycia jednak spełzły na niczym - okazało się, że projekt na Sourceforge nie jest aktualizowany od 10 lat i brakuje informacji o tym, że jego repozytorium zostało przeniesione na freedesktop.org/xorg. Brakuje aktualnej dokumentacji, aktualizacje pojawiają się niezwykle rzadko, a co gorsza sam projekt do obsługi wielu monitorów korzysta z rozszerzenia Xinerama, które zostało de facto zastąpione przez RandR. Mimo usilnych prób nie udało nam się doprowadzić Xdmx do działania.
 
-      \item \textbf{ParaView} - \url{http://www.paraview.org/}
+      \item \textbf{ParaView} \cite{ProjParaView}
 
         ParaView jest obsługującą rozproszone wielomonitorowe konfiguracje aplikacją do wizualizacji danych w 3D. Jest to program używany w laboratorium w Katedrze Informatyki, ale niestety nie można użyć go jako narzędzia pozwalającego na transmisję fragmentu pulpitu.
     \end{itemize}
