@@ -42,11 +42,11 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
       \item \textbf{MaxiVista} - \url{http://maxivista.com}
         Jest to projekt bliźniaczo podobny do naszego. Umożliwia podpięcie dodatkowych komputerów po sieci z użyciem TCP/IP. Nie satysfakcjonuje on nas ze względu na pewne poważne ograniczenia:
         \begin{itemize}
-          \item na maszynie będącej serwerem musi być zainstalowany system Windows, klientem może być Windows lub Mac
-          \item można podłączyć maksymalnie 3 klienty
-          \item większość opcji jest dostępna tylko w wersji Pro
-          \item za darmo dostępna jest tylko 30-dniowa wersja próbna
-          \item ilość dostępnych rozdzielczości jest mocno ograniczona
+          \item na maszynie będącej serwerem musi być zainstalowany system Windows, klientem może być Windows lub Mac,
+          \item można podłączyć maksymalnie 3 klienty,
+          \item większość opcji jest dostępna tylko w wersji Pro,
+          \item za darmo dostępna jest tylko 30-dniowa wersja próbna,
+          \item ilość dostępnych rozdzielczości jest mocno ograniczona.
         \end{itemize}
 
       \item \textbf{ZoneScreen} - \url{http://zoneos.com/zonescreen.htm}
@@ -65,12 +65,12 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
   \subsection{Analiza wykonalności i stworzenie prototypu}
     Analiza wspomnianych rozwiązań podsunęła nam pewien pomysł: gdybyśmy byli w stanie przekonać serwer X, że ma dostępną większą powierzchnię pulpitu niż to jest w rzeczywistości, moglibyśmy wysłać niewidoczną część pulpitu po sieci używając przykładowo VNC. Po przeszukaniu zasobów Internetu okazało się, że jest to jak najbardziej możliwe: standardowy sterownik grafiki dla kart Intela daje możliwość tworzenia wirtualnych monitorów (virtual output). Co prawda ogranicza nam to ilość sprzętu, na którym możemy uruchomić nasz projekt, jednak karty Intela są całkiem popularne i nie mieliśmy żadnych problemów ze znalezieniem odpowiedniego komputera.
 
-    Po przebrnięciu przez sporą ilość dokumentacji, opcji konfiguracyjnych serwera X i samego sterownika xserver-xorg-video-intel udało nam się skonfigurować wirtualne pulpity na dwóch maszynach działających pod kontrolą systemu operacyjnego Ubuntu (w wersjach 13.04 i 13.10). Po tym zapoznaliśmy się z konfiguracją serwera VNC (x11vnc), co wystarczyło nam do stworzenia pierwszego prototypu aplikacji.
+    Po przebrnięciu przez sporą ilość dokumentacji, opcji konfiguracyjnych serwera X i samego sterownika xserver-xorg-video-intel udało nam się skonfigurować wirtualne pulpity na dwóch maszynach działających pod kontrolą systemu operacyjnego Ubuntu (w wersjach 13.04 i 13.10). Po tym zapoznaliśmy się z konfiguracją serwera VNC (x11vnc, \cite{x11vncProj}), co wystarczyło nam do stworzenia pierwszego prototypu aplikacji.
 
   \subsection{Spotkanie z klientem - podsumowanie iteracji 1}
-    W połowie kwietnia spotkaliśmy się z klientem i zaprezentowaliśmy mu efekt naszych prac.
+    W połowie kwietnia spotkaliśmy się z klientem i zaprezentowaliśmy mu efekt naszych prac. Przeprowadziliśmy test wysyłania obrazu wideo, widocznego na rysunku \ref{fig:It1VideoTest}, oraz statycznego pulpitu (rysunki \ref{fig:It1Test1}, \ref{fig:It1Test2}, \ref{fig:It1Test3}).
 
-    Chociaż pojawiło się kilka nieoczekiwanych błędów, prezentację prototypu uznaliśmy za umiarkowany sukces. Działał on dużo lepiej niż się tego spodziewaliśmy, więc w tym momencie zdecydowaliśmy się kontynuować prace nad tym rozwiązaniem. Największym problemem w tym momencie były regularnie pojawiające się czarne prostokąty, widoczne na załączonych zdjęciach. Poza tym, szybkość odświeżania kursora myszy była niewystarczająca - dowiedzieliśmy się, że żeby aplikacja nie utrudniała pracy, potrzebujemy innego niż VNC mechanizmu aktualizacji jego pozycji.
+    Chociaż pojawiło się kilka nieoczekiwanych błędów, prezentację prototypu uznaliśmy za umiarkowany sukces. Działał on dużo lepiej niż się tego spodziewaliśmy, więc w tym momencie zdecydowaliśmy się kontynuować prace nad tym rozwiązaniem. Największym problemem w tym momencie były regularnie pojawiające się czarne prostokąty, widoczne na załączonych zdjęciach (np. rysunek \ref{fig:It1Test2}). Poza tym, szybkość odświeżania kursora myszy była niewystarczająca - dowiedzieliśmy się, że żeby aplikacja nie utrudniała pracy, potrzebujemy innego niż VNC mechanizmu aktualizacji jego pozycji.
 
     \vfill
     \img{it1_1.jpg}{[iteracja 1] test transmisji wideo}{It1VideoTest}
@@ -99,10 +99,13 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
     Obserwacje:
     \begin{itemize}
       \item prostokąt wydaje się mieć szerokość taką, jak Output 0, a jego górna krawędź jest na tej samej wysokości co dolna krawędź Outputu 0,
-      \item problemy z tym obszarem pojawiają się nie tylko przy wysyłaniu obrazu przez VNC, ale też w przypadku MPEG2-TS,
+      \item problemy z tym obszarem pojawiają się nie tylko przy wysyłaniu obrazu przez VNC, ale też w przypadku MPEG2-TS (rysunek \ref{fig:It2VncBugScreen2}),
       \item instalacja najnowszych sterowników Intela z repozytorium Xorg nie pomogła,
-      \item utworzenie wirtualnego outputu na nieużywanym obszarze powoduje zniknięcie części czarnego prostokąta. Potencjalny workaround - dodać wirtualny output pokrywający cały nieużywany obszar.
+     \item utworzenie wirtualnego outputu na nieużywanym obszarze powoduje zniknięcie części czarnego prostokąta, co ilustrują rysunki \ref{fig:It2VncBug2}, \ref{fig:It2VncBugScreen4}. Potencjalny workaround - dodać wirtualny output pokrywający cały nieużywany obszar.
     \end{itemize}
+
+    Wygląda na to, że niezależnie od współrzędnych przesyłanego wycinka, prostokąt o szerokości równej szerokości Outputu 0 i offsecie 0x<output0\_y\_resolution> względem lewego górnego roku wycinka ma problemy z wyświeltaniem. Co ciekawe, obszar który teoretycznie nie jest przydzielony do żadnego outputu, a nie znajduje się w feralnym prostokącie, \textbf{jest} streamowany - widać taskbar Gnome, którego być tam nie powinno, a dodatkowo okna nie mają problemu z wyświetlaniem.
+
     \vfill
 
     Wygląda na to, że niezależnie od współrzędnych przesyłanego wycinka, prostokąt o szerokości równej szerokości Outputu 0 i offsecie 0x<output0\_y\_resolution> względem lewego górnego roku wycinka ma problemy z wyświeltaniem. Co ciekawe, obszar który teoretycznie nie jest przydzielony do żadnego outputu, a nie znajduje się w feralnym prostokącie, \textbf{jest} streamowany - widać taskbar Gnome, którego być tam nie powinno, a dodatkowo okna nie mają problemu z wyświetlaniem:
@@ -113,25 +116,26 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
 
     Stworzyliśmy poprawkę, dostępną pod adresem \url{https://gist.github.com/dextero/bd2e22292a08417673e4} i na repozytorium projektu (plik \emph{x11vnc-blackout-clip-fix.patch}).
 
-    Wysłaliśmy pull request z opisem problemu i opracowaną poprawką do autorów x11vnc. Po kilku dniach został on zaakceptowany, a łatka trafiła do głównej gałęzi repozytorium projektu. Można to zobaczyć pod adresem \url{https://github.com/LibVNC/libvncserver/pull/4}.
+    Po jakichś dwóch tygodniach poszukiwania zakończyły się sukcesem. Okazało się, że x11vnc zaznacza obszary znajdujące się poza poprawnym obszarem pulpitu i pomija ich wysyłanie. Niestety, przy wyznaczaniu ich współrzędnych kompletnie ignoruje wartości podane przez używany przez nas parametr \emph{-clip}! W połączeniu z tym, że w całym x11vnc używane są współrzędne względem clipping regionu spowodowało widoczne powyżej problemy.
 
-    W połowie maja przetestowaliśmy załataną wersję serwera VNC w laboratorium 1.18. Nie zaobserwowaliśmy występującego wcześniej błędu: czarne prostokąty bezpowrotnie zniknęły. Rzuciły się nam za to w oczy problemy z wydajnością przesyłania dużej powierzchni pulpitu z wysoką częstotliwością.
+    Stworzyliśmy poprawkę \cite{x11vncPatch} i wysłaliśmy pull request z opisem problemu do autorów x11vnc \cite{x11vncPullRequest}. Po kilku dniach został on zaakceptowany, a łatka trafiła do głównej gałęzi repozytorium projektu.
 
     \vfill
     \img{it2_1.jpg}{[iteracja 2] test załatanej wersji x11vnc}{It2Test1}
     \img{it2_2.jpg}{[iteracja 2] test załatanej wersji x11vnc}{It2Test2}
     \pagebreak
+    W połowie maja przetestowaliśmy załataną wersję serwera VNC w laboratorium 1.18. Nie zaobserwowaliśmy występującego wcześniej błędu: czarne prostokąty bezpowrotnie zniknęły, co można zobaczyć na rysunku \ref{fig:It2Test2}. Rzuciły się nam za to w oczy problemy z wydajnością przesyłania dużej powierzchni pulpitu z wysoką częstotliwością.
 
   \subsection{Uproszczenie konfiguracji}
 
-    W celu uproszczenia konfiguracji powstał skrypt basha, automatyzujący konfigurację wirtualnych ekranów i uruchamianie serwera x11vnc. Eksperymentowaliśmy również ze stworzeniem prostego interfejsu graficznego do obsługi tego skryptu, który jednak później został porzucony z powodu niewielkiej przydatności w porównaniu do ilości wymaganych do zainstalowania bibliotek.
+    W celu uproszczenia konfiguracji powstał skrypt basha, automatyzujący konfigurację wirtualnych ekranów i uruchamianie serwera x11vnc. Eksperymentowaliśmy również ze stworzeniem prostego interfejsu graficznego do obsługi tego skryptu (widocznego na rysunkach \ref{fig:It2Test3} oraz \ref{fig:It2Test4}), który jednak później został porzucony z powodu niewielkiej przydatności w porównaniu do ilości wymaganych do zainstalowania bibliotek.
 
     \img{it2_3.jpg}{[iteracja 2] test graficznego interfejsu konfiguracyjnego}{It2Test3}
     \img{it2_4.jpg}{[iteracja 2] test graficznego interfejsu konfiguracyjnego}{It2Test4}
 
   \subsection{Guacamole - przeglądarkowy klient VNC}
 
-    Użycie przeglądarki internetowej w charakterze klienta VNC otworzyłoby przed nami duże możliwości: bylibyśmy w stanie zamienić dowolne urządzenie z w miarę nowoczesną przeglądarką w klienta naszej aplikacji. Pod koniec iteracji 2 zdołaliśmy skonfigurować Guacamole (\url{http://guac-dev.org}) i przeprowadzić kilka prostych testów. Wyniki były obiecujące, więc w kolejnej iteracji poświęciliśmy trochę czasu na rozwinięcie projektu w tym kierunku.
+    Użycie przeglądarki internetowej w charakterze klienta VNC otworzyłoby przed nami duże możliwości: bylibyśmy w stanie zamienić dowolne urządzenie z w miarę nowoczesną przeglądarką w klienta naszej aplikacji. Pod koniec iteracji 2 zdołaliśmy skonfigurować Guacamole \cite{Guacamole} i przeprowadzić kilka prostych testów. Wyniki (widoczne na rysunkach \ref{fig:It2Guac1} i \ref{fig:It2Guac2}) były obiecujące, więc w kolejnej iteracji poświęciliśmy trochę czasu na rozwinięcie projektu w tym kierunku.
 
     \vfill
     \img{it2_5.jpg}{[iteracja 2] Test Guacamole - ekran wyboru połączenia VNC}{It2Guac1}
@@ -175,28 +179,61 @@ Czwartą, ostatnią iterację poświęcliśmy na doszlifowywanie naszej aplikacj
 
   \textbf{Prace wykonane wspólnie}
   \begin{itemize}[noitemsep]
-    \item analiza istniejących rozwiązań rozwiązujących podobny problem
-    \item opracowanie modelu komunikacji klient-serwer umożliwiającego automatyczną konfigurację serwera
-    \item opracowanie rozwiązania usprawniającego synchronizację ruchu kursora na ekranie klienta
-    \item dokumentacja projektu
+    \item analiza istniejących rozwiązań rozwiązujących podobny problem,
+    \item opracowanie modelu komunikacji klient-serwer umożliwiającego automatyczną konfigurację serwera,
+    \item opracowanie rozwiązania usprawniającego synchronizację ruchu kursora na ekranie klienta,
+    \item dokumentacja projektu.
   \end{itemize}
 
   \noindent
   \textbf{Miłosz Łakomy}
   \begin{itemize}[noitemsep]
-    \item opracowanie prototypowej wersji aplikacji
-    \item stworzenie skryptów upraszczających konfigurację wczesnej wersji projektu
-    \item zaprojektowanie i implementacja skryptu serwera
+    \item opracowanie prototypowej wersji aplikacji,
+    \item stworzenie skryptów upraszczających konfigurację wczesnej wersji projektu,
+    \item zaprojektowanie i implementacja skryptu serwera.
   \end{itemize}
 
   \noindent
   \textbf{Marcin Radomski}
   \begin{itemize}[noitemsep]
-    \item zlokalizowanie błędu w x11vnc i stworzenie łatki
-    \item zaprojektowanie i implementacja skryptu klienta
-    \item opracowanie prototypu klienta przeglądarkowego
+    \item zlokalizowanie błędu w x11vnc i stworzenie łatki,
+    \item zaprojektowanie i implementacja skryptu klienta,
+    \item opracowanie prototypu klienta przeglądarkowego.
   \end{itemize}
 
   \vfill
 
-\end{document} 
+\pagebreak
+\begin{thebibliography}{9}
+
+  \bibitem{ProjMaxiVista}
+    Strona projektu MaxiVista: \url{http://maxivista.com}
+
+  \bibitem{ProjZoneScreen}
+    Strona projektu ZoneSceen: \url{http://zoneos.com/zonescreen.htm}
+
+  \bibitem{ProjAirDisplay}
+    Strona projektu AirDisplay: \url{http://avatron.com/applications/air-display}
+
+  \bibitem{ProjXDMX}
+    Oryginalna strona projektu XDMX: \url{http://dmx.sourceforge.net} \\
+    Aktualne repozytorium: \url{http://cgit.freedesktop.org/xorg/lib/libdmx/}
+
+  \bibitem{ProjParaView}
+    Strona projektu ParaView: \url{http://www.paraview.org/}
+
+  \bibitem{x11vncProj}
+    Repozytorium projektu x11vnc: \url{https://github.com/LibVNC/libvncserver}
+
+  \bibitem{x11vncPatch}
+    Łatka jest dostępna pod adresem \url{https://gist.github.com/dextero/bd2e22292a08417673e4} oraz na repozytorium projektu (plik \emph{x11vnc-blackout-clip-fix.patch}).
+
+  \bibitem{x11vncPullRequest}
+    Utworzona przez nas, wcielona do projektu x11vnc łatka: \url{https://github.com/LibVNC/libvncserver/pull/4}.
+
+  \bibitem{Guacamole}
+    Strona projektu Guacamole: \url{http://www.guac-dev.org}
+
+\end{thebibliography}
+
+\end{document}

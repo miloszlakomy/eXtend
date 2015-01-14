@@ -12,9 +12,9 @@
 \section{Słownik}
 
   \begin{itemize}
-    \item \textbf{Klient eXtend} - część projektu eXtend przeznaczona do uruchamiania na klientach. Obejmuje skrypt w Pythonie wraz z niezbędnymi bibliotekami oraz aplikację klienta VNC.
-    \item \textbf{Serwer eXtend} - część projektu eXtend uruchamiana na serwerze. Obejmuje skrypt w Pythonie, niezbędne biblioteki, aplikację serwera VNC (x11vnc) oraz sterownik xserver-xorg-video-intel.
-    \item \textbf{Klient} - maszyna wykorzystywana przez serwer jako dodatkowy monitor rozszerzający dostępną powierzchnię pulpitu.
+    \item \textbf{Klient eXtend} - część projektu eXtend przeznaczona do uruchamiania na klientach. Obejmuje skrypt w Pythonie wraz z niezbędnymi bibliotekami oraz aplikację klienta VNC,
+    \item \textbf{Serwer eXtend} - część projektu eXtend uruchamiana na serwerze. Obejmuje skrypt w Pythonie, niezbędne biblioteki, aplikację serwera VNC (x11vnc) oraz sterownik xserver-xorg-video-intel,
+    \item \textbf{Klient} - maszyna wykorzystywana przez serwer jako dodatkowy monitor rozszerzający dostępną powierzchnię pulpitu,
     \item \textbf{Serwer} - komputer zarządzający połączeniem z klientami i wysyłający im obraz do wyświetlenia.
   \end{itemize}
 
@@ -30,11 +30,11 @@
 
         Jest to projekt bliźniaczo podobny do naszego. Umożliwia podpięcie dodatkowych komputerów po sieci z użyciem TCP/IP. Nie satysfakcjonuje on nas ze względu na pewne poważne ograniczenia:
         \begin{itemize}
-          \item na maszynie będącej serwerem musi być zainstalowany system Windows, klientem może być Windows lub Mac
-          \item można podłączyć maksymalnie 3 klienty
-          \item większość opcji jest dostępna tylko w wersji Pro
-          \item za darmo dostępna jest tylko 30-dniowa wersja próbna
-          \item ilość dostępnych rozdzielczości jest mocno ograniczona
+          \item na maszynie będącej serwerem musi być zainstalowany system Windows, klientem może być Windows lub Mac,
+          \item można podłączyć maksymalnie 3 klienty,
+          \item większość opcji jest dostępna tylko w wersji Pro,
+          \item za darmo dostępna jest tylko 30-dniowa wersja próbna,
+          \item ilość dostępnych rozdzielczości jest mocno ograniczona.
         \end{itemize}
 
       \item \textbf{ZoneScreen} \cite{ProjZoneScreen}
@@ -98,7 +98,7 @@
 
     Projekt eXtend składa się z aplikacji serwerowej oraz klienckiej. Używają one dwóch niezależnych kanałów komunikacji:
     \begin{itemize}
-      \item połączenia konfiguracyjnego używającego TCP - w ten sposób klient i serwer negocjują parametry wirtualnego ekranu, identyfikator klienta oraz parametry połączenia VNC. Wiadomości są przesyłane z użyciem prostego tekstowego protokołu opracowanego przez nas.
+      \item połączenia konfiguracyjnego używającego TCP - w ten sposób klient i serwer negocjują parametry wirtualnego ekranu, identyfikator klienta oraz parametry połączenia VNC. Wiadomości są przesyłane z użyciem prostego tekstowego protokołu opracowanego przez nas,
       \item multicastowych pakietów UDP - serwer nadaje w ten sposób komunikaty o zmianie pozycji kursora w celu zminimalizowania zauważalnego opóźnienia między ruchem myszy a aktualizacją jego pozycji. Dodatkowo niepodłączone klienty po otrzymaniu tego typu pakietu traktują nadawcę jako serwer i próbują nawiązać połączenie konfiguracyjne po TCP. Ponieważ potrzebowaliśmy rozwiązania pozwalającego na minimalizację opóźnienia ruchów myszą względem aktualizacji pozycji kursora na ekranie, ilość pojawiających się w sieci pakietów ze współrzędnymi myszy mogła stać się całkiem spora. Użycie pakietów multicastowych pozwoliło nam uniezależnić szerokość pasma wykorzystywanego do transmisji pozycji kursora od ilości klientów podłączonych do serwera.
     \end{itemize}
 
@@ -121,15 +121,15 @@
 
       Klient wysyła do serwera tylko jeden typ wiadomości:
       \begin{itemize}[nolistsep]
-        \item \textbf{resolution} \emph{szerokość} \emph{wysokość} - informuje serwer o dostępnej na kliencie rozdzielczości ekranu w pikselach,
+        \item \textbf{resolution} \emph{szerokość} \emph{wysokość} - informuje serwer o dostępnej na kliencie rozdzielczości ekranu w pikselach.
       \end{itemize}
 
     \subsubsection{Komunikacja multicastowa}
 
       Do rozgłaszania adresu IP serwera oraz wysyłania aktualizacji pozycji kursora używamy 8-bajtowych datagramów UDP:
       \begin{itemize}[nolistsep]
-        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna X kursora
-        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna Y kursora
+        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna X kursora,
+        \item 4 bajty (32-bitowa liczba całkowita ze znakiem) - współrzędna Y kursora.
       \end{itemize}
 
   \vfill
@@ -140,26 +140,26 @@
 
     \textbf{Prace wykonane wspólnie}
     \begin{itemize}[noitemsep]
-      \item analiza istniejących rozwiązań rozwiązujących podobny problem
-      \item opracowanie modelu komunikacji klient-serwer umożliwiającego automatyczną konfigurację serwera
-      \item opracowanie rozwiązania usprawniającego synchronizację ruchu kursora na ekranie klienta
-      \item dokumentacja projektu
+      \item analiza istniejących rozwiązań rozwiązujących podobny problem,
+      \item opracowanie modelu komunikacji klient-serwer umożliwiającego automatyczną konfigurację serwera,
+      \item opracowanie rozwiązania usprawniającego synchronizację ruchu kursora na ekranie klienta,
+      \item dokumentacja projektu.
     \end{itemize}
 
     \noindent
     \textbf{Miłosz Łakomy}
     \begin{itemize}[noitemsep]
-      \item opracowanie prototypowej wersji aplikacji
-      \item stworzenie skryptów upraszczających konfigurację wczesnej wersji projektu
-      \item zaprojektowanie i implementacja skryptu serwera
+      \item opracowanie prototypowej wersji aplikacji,
+      \item stworzenie skryptów upraszczających konfigurację wczesnej wersji projektu,
+      \item zaprojektowanie i implementacja skryptu serwera.
     \end{itemize}
 
     \noindent
     \textbf{Marcin Radomski}
     \begin{itemize}[noitemsep]
-      \item zlokalizowanie błędu w x11vnc i stworzenie łatki
-      \item zaprojektowanie i implementacja skryptu klienta
-      \item opracowanie prototypu klienta przeglądarkowego
+      \item zlokalizowanie błędu w x11vnc i stworzenie łatki,
+      \item zaprojektowanie i implementacja skryptu klienta,
+      \item opracowanie prototypu klienta przeglądarkowego.
     \end{itemize}
 
   \subsection{Proces}
@@ -232,13 +232,13 @@
 
     \begin{itemize}
 
-      \item żeby projekt był naprawdę użyteczny, powinniśmy stworzyć paczki instalacyjne dla popularnych dystrybucji Linuksa, lub nawet opracować system automatycznie budujący je z repozytorium projektu.
+      \item żeby projekt był naprawdę użyteczny, powinniśmy stworzyć paczki instalacyjne dla popularnych dystrybucji Linuksa, lub nawet opracować system automatycznie budujący je z repozytorium projektu,
 
-      \item dużym krokiem w stronę zwiększenia wygody użytkowania projektu byłoby stworzenie graficznego interfejsu umożliwiającego ustawiania położenia ekranów klientów przez ich przeciągania. Byłoby to przydatne zwłaszcza w przypadku konfiguracji składających się z wielu klientów.
+      \item dużym krokiem w stronę zwiększenia wygody użytkowania projektu byłoby stworzenie graficznego interfejsu umożliwiającego ustawiania położenia ekranów klientów przez ich przeciągania. Byłoby to przydatne zwłaszcza w przypadku konfiguracji składających się z wielu klientów,
 
-      \item kolejnym istotnym, lecz niestety nietrywialnym w implementacji usprawnieniem byłoby umożliwienie uruchamiania serwera na maszynach z kartami graficznymi innych popularnych producentów. Wymagałoby to jednak sporej ilości pracy nad upsrawienieniem ich sterowników.
+      \item kolejnym istotnym, lecz niestety nietrywialnym w implementacji usprawnieniem byłoby umożliwienie uruchamiania serwera na maszynach z kartami graficznymi innych popularnych producentów. Wymagałoby to jednak sporej ilości pracy nad upsrawienieniem ich sterowników,
 
-      \item w przypadku ekranów o dużej powierzchni pożądane może być skalowanie obrazu w celu zwiększenia wydajności transmisji. Na wystarczająco dużych konfiguracjach zmniejszenie faktycznej rozdzielczości jest zauważalne dużo trudniej niż mała ilość wyświetlanych klatek na sekundę.
+      \item w przypadku ekranów o dużej powierzchni pożądane może być skalowanie obrazu w celu zwiększenia wydajności transmisji. Na wystarczająco dużych konfiguracjach zmniejszenie faktycznej rozdzielczości jest zauważalne dużo trudniej niż mała ilość wyświetlanych klatek na sekundę,
 
       \item interesującą możliwością jest wykorzystanie projektu Guacamole, co pozwoliłoby na zredukowanie zależności klienta do przeglądarki internetowej z obsługą HTML5 kosztem bardziej skomplikowanej architektury serwera. Podczas prac na projektem powstał co prawda prototyp tego rozwiązania, ale z powodu trudności technicznych oraz nietrywialnej konfiguracji wszystkich zależności tej wersji aplikacji zdecydowaliśmy się go porzucić.
 
