@@ -92,7 +92,7 @@ class WebClient(object):
 
     def _init_guacamole(self):
         ws_print('init guacamole')
-        self.output = vnc.initVirtualOutputAndVNC(self.resolution)
+        self.output = vnc.initVirtualOutputAndVNC(self.resolution, None)
 
         vnc_pass = open(vnc.passwordFile).readline().strip('\n') if vnc.passwordFile else ''
         config = guacamole.Config('/etc/guacamole/user-mapping.xml')

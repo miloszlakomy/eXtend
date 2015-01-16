@@ -188,7 +188,7 @@ window.eXtend = (function() {
                 for (var key in args) {
                     statusMsg('- ' + key + ': ' + args[key]);
                 }
-                    
+
                 if ('extend_id' in args) {
                     extend._reconnect(args.extend_id);
                 } else {
