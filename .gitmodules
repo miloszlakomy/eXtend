@@ -1,6 +1,6 @@
-[submodule "eXtend/libs/submodules/PyUserInput"]
-	path = eXtend/libs/submodules/PyUserInput
+[submodule "libs/submodules/PyUserInput"]
+	path = libs/submodules/PyUserInput
 	url = https://github.com/SavinaRoja/PyUserInput
-[submodule "eXtend/libs/submodules/pyfiglet"]
-	path = eXtend/libs/submodules/pyfiglet
+[submodule "libs/submodules/pyfiglet"]
+	path = libs/submodules/pyfiglet
 	url = https://github.com/pwaller/pyfiglet
