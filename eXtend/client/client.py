@@ -93,7 +93,11 @@ def get_vnc_viewer(vnc_client_cmd = None):
     if vnc_client_cmd:
         return GenericVNCViewer(vnc_client_cmd)
 
-    stdout, stderr, exit_code = runAndWait('vncviewer --help')
+    _, _, exit_code = runAndWait('which vncviewer')
+    if exit_code:
+        raise ValueError('`vncviewer` command not available')
+
+    stdout, stderr, _ = runAndWait('vncviewer --help')
 
     stdout = stdout.strip()
     stderr = stderr.strip()
@@ -113,7 +117,7 @@ def get_vnc_viewer(vnc_client_cmd = None):
         print('detected TigerVNC viewer')
         return TigerVNCViewer()
     else:
-        raise NotImplementedError('Installed VNC viewer (%s) is not supported' % word)
+        raise NotImplementedError('Installed VNC viewer (%s) is not supported' % name)
 
 #DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT -autopass' # windowed
 DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT -autopass' # fullscreen
