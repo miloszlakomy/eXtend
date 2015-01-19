@@ -10,13 +10,29 @@ function die() {
 SCRIPT_DIR=$(dirname $(readlink -f "$0"))
 LIB_DIR="$SCRIPT_DIR/libs"
 
+MISSING_PACKAGES=""
+which git >/dev/null 2>&1 \
+    || MISSING_PACKAGES+="git "
+which wget >/dev/null 2>&1 \
+    || MISSING_PACKAGES+="wget "
+which gcc >/dev/null 2>&1 \
+    || MISSING_PACKAGES+="gcc "
+ls /usr/include/asm >/dev/null 2>&1 \
+    || MISSING_PACKAGES+="gcc-multilib "
+ls /usr/include/python2.7/Python.h >/dev/null 2>&1 \
+    || MISSING_PACKAGES+="libpython2.7-dev "
+ls /usr/lib/python2.7/dist-packages/Xlib >/dev/null 2>&1 \
+    || MISSING_PACKAGES+="python-xlib "
+
+[[ -z "$MISSING_PACKAGES" ]] || die "install following packages first: $MISSING_PACKAGES"
+
 git submodule update --init
 
 pushd "$LIB_DIR" >/dev/null 2>&1
     echo "* netifaces: downloading"
     NETIFACES_RELEASE=release_0_10_4.tar.gz
-    #rm -f ./"$NETIFACES_RELEASE"
-    #wget -q https://bitbucket.org/al45tair/netifaces/get/"$NETIFACES_RELEASE"
+    rm -f ./"$NETIFACES_RELEASE"
+    wget -q https://bitbucket.org/al45tair/netifaces/get/"$NETIFACES_RELEASE"
 
     echo "* netifaces: unpacking"
     NETIFACES_DIR=$(tar tf "$NETIFACES_RELEASE" | head -n 1 | sed 's|/[^/]*||')
@@ -58,5 +74,5 @@ EOF
     popd >/dev/null 2>&1
 
     echo "* netifaces: cleaning up"
-    #rm -rf "$NETIFACES_DIR" "$NETIFACES_RELEASE"
+    rm -rf "$NETIFACES_DIR" "$NETIFACES_RELEASE"
 popd >/dev/null 2>&1
