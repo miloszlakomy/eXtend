@@ -70,7 +70,7 @@ class TightVNCViewer(GenericVNCViewer):
     def start(self, host, port, passwd_file):
         self.start_process(host, port)
 
-        with open(password_file) as f:
+        with open(passwd_file) as f:
             self.vnc_process.stdin.write(f.read() + '\n')
             self.vnc_process.stdin.flush()
 
