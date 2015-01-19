@@ -11,11 +11,13 @@ import subprocess
 import sys
 import argparse
 import struct
+import tempfile
 
 sys.path += [ os.path.join(os.path.dirname(__file__), 'libs') ]
 
 from pymouse import PyMouse
 from message_buffer import MessageBuffer
+from runAndWait import runAndWait
 import ifutils
 import pyfiglet
 
@@ -23,6 +25,95 @@ DEFAULT_PORT = int(os.getenv('EXTEND_PORT') or 0x7e5d)
 DEFAULT_MCAST_GROUP = os.getenv('EXTEND_MCAST_GROUP') or '224.0.126.93'
 DEFAULT_LOCK_PREFIX = os.getenv('HOME') or '/tmp'
 DEFAULT_LOCK_FILE = DEFAULT_LOCK_PREFIX + '/.eXtend-client.lock'
+
+class VNCViewer(object):
+    def start(self, host, port, passwd_file): raise NotImplementedError()
+    def stop(self): raise NotImplementedError()
+    def is_running(self): raise NotImplementedError()
+
+class GenericVNCViewer(VNCViewer):
+    def __init__(self, vnc_client_cmd):
+        self.client_cmd = vnc_client_cmd
+        self.vnc_process = None
+
+    def start_process(self, host, port):
+        if self.is_running():
+            self.stop()
+
+        cmd = (self.client_cmd.replace('HOST', host)
+                              .replace('PORT', port)
+                              .split())
+
+        print('starting VNC viewer: %s' % self.client_cmd)
+        self.vnc_process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+
+    def stop(self):
+        if not self.is_running():
+            return
+
+        print('stopping vnc client')
+        try:
+            self.vnc_process.terminate()
+        except:
+            print('cannot terminate VNC client')
+
+        self.vnc_process = None
+
+    def is_running(self):
+        return self.vnc_process is not None
+
+class TightVNCViewer(GenericVNCViewer):
+    def __init__(self):
+        GenericVNCViewer.__init__(self,
+                'vncviewer -fullscreen -viewonly -autopass HOST::PORT')
+
+    def start(self, host, port, passwd_file):
+        self.start_process(host, port)
+
+        with open(password_file) as f:
+            self.vnc_process.stdin.write(f.read() + '\n')
+            self.vnc_process.stdin.flush()
+
+class TigerVNCViewer(GenericVNCViewer):
+    def __init__(self):
+        _, self.encrypted_password_file = tempfile.mkstemp()
+        GenericVNCViewer.__init__(self,
+                ('vncviewer -FullScreen -ViewOnly -PasswordFile %s HOST::PORT' %
+                 self.encrypted_password_file))
+
+    def start(self, host, port, passwd_file):
+        with open(passwd_file) as f:
+            passwd = f.read()
+            passwd += '\n' + passwd + '\n'
+        runAndWait('vncpasswd %s' % self.encrypted_password_file, stdin=passwd)
+
+        self.start_process(host, port)
+
+def get_vnc_viewer(vnc_client_cmd = None):
+    if vnc_client_cmd:
+        return GenericVNCViewer(vnc_client_cmd)
+
+    stdout, stderr, exit_code = runAndWait('vncviewer --help')
+
+    stdout = stdout.strip()
+    stderr = stderr.strip()
+
+    if stdout:
+        name = stdout.split()[0]
+    elif stderr:
+        name = stderr.split()[0]
+    else:
+        raise ValueError('Cannot determine installed VNC viewer')
+
+    print('VNC client command not specified, auto-detecting')
+    if name == 'TightVNC':
+        print('detected TightVNC viewer')
+        return TightVNCViewer()
+    if name == 'TigerVNC':
+        print('detected TigerVNC viewer')
+        return TigerVNCViewer()
+    else:
+        raise NotImplementedError('Installed VNC viewer (%s) is not supported' % word)
 
 #DEFAULT_VNCCLIENT_CMD = 'vncviewer -viewonly HOST::PORT -autopass' # windowed
 DEFAULT_VNCCLIENT_CMD = 'vncviewer -fullscreen -viewonly HOST::PORT -autopass' # fullscreen
@@ -62,11 +153,12 @@ parser.add_argument('-s', '--server-ip',
 parser.add_argument('-v', '--vnc-client-cmd',
                     action='store',
                     dest='vnc_client_cmd',
-                    default=DEFAULT_VNCCLIENT_CMD,
+                    default=None,
                     help='set a shell command used to spawn VNC client. The '
                          'HOST and PORT substrings will be replaced with the '
                          'IP and port used to connect to the VNC server. '
-                         'Default: `%s`' % DEFAULT_VNCCLIENT_CMD)
+                         'If not specified, the client will attempt to '
+                         'determine the VNC client from its help message.')
 parser.add_argument('-w', '--vnc-passwd-file',
                     action='store',
                     dest='vnc_password_file',
@@ -104,9 +196,8 @@ class EXtendClient(object):
         self.tcp_socket = None
         self.tcp_msg_buffer = MessageBuffer()
 
-        self.vnc_command = vnc_command
+        self.vnc_viewer = get_vnc_viewer(vnc_command)
         self.vnc_password_file = vnc_password_file
-        self.vnc_process = None
         self.display_offset = (0, 0)
 
         if not self.vnc_password_file:
@@ -191,31 +282,14 @@ class EXtendClient(object):
         if self.tcp_socket:
             self.tcp_socket.close()
         self.tcp_socket = None
-        self.vnc_stop()
-
-    def vnc_stop(self):
-        if self.vnc_process:
-            print('stopping vnc client')
-            try:
-                self.vnc_process.terminate()
-            except:
-                print('cannot terminate VNC client')
-
-            self.vnc_process = None
+        self.vnc_viewer.stop()
 
     def vnc_start(self, vnc_host, vnc_port, offset_x, offset_y):
-        cmd = (self.vnc_command.replace('HOST', vnc_host)
-                               .replace('PORT', vnc_port)).split()
-
-        print('starting vnc viewer (%s)' % cmd)
         self.display_offset = (int(offset_x), int(offset_y))
+        self.vnc_viewer.start(vnc_host, vnc_port, self.vnc_password_file)
 
-        self.vnc_stop()
-        self.vnc_process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-
-        with open(self.vnc_password_file) as f:
-            self.vnc_process.stdin.write(f.read() + '\n')
-            self.vnc_process.stdin.flush()
+    def vnc_stop(self):
+        self.vnc_viewer.stop()
 
     def id_assigned(self, new_id):
         print('got ID: %s' % new_id)

@@ -4,7 +4,7 @@ from runAndWait import runAndWait
 import re
 
 def parse_xrandr():
-    rawOut, returnCode = runAndWait('xrandr')
+    rawOut, _, returnCode = runAndWait('xrandr')
     rawOutputs = re.findall('\n([A-Z]+\d+.*)', rawOut)
 
     outputs = {}

@@ -2,7 +2,7 @@
 from runAndWait import runAndWait
 
 def cvt(x, y):
-  output, returnCode = runAndWait('cvt %d %d' % (x, y))
+  output, _, returnCode = runAndWait('cvt %d %d' % (x, y))
 
   modeline = output.split('\n')[-2]
   modeline = modeline[modeline.find(' ')+1:]

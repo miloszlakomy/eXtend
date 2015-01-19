@@ -99,7 +99,7 @@ vncSubprocessMap = {}
 
 def processRunning(name, silent = False):
   command = 'ps -u `whoami` -o command'
-  ps = runAndWait(command, silent = silent)
+  ps, _, _ = runAndWait(command, silent = silent)
 
   return re.findall('\n *' + name + ' *\n', '\n' + ps[0] + '\n') != []
 
