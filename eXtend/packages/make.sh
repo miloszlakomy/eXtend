@@ -4,11 +4,12 @@ make_package() {
     echo "creating package $2 from $1"
 
     local SRC_DIR=$(readlink -f "$1")
-    local DST_DIR=$(readlink -f "$2")
+    local CURR_DIR="$(readlink -f .)"
+    local PKG_DIR="$CURR_DIR/packages"
+    local DST_DIR="$CURR_DIR/files/$2"
+    local ARCHIVE_NAME="$2.tar.gz"
 
-    local DST_BASENAME=$(basename "$2")
-    local DST_DIRNAME=$(dirname "$2")
-    local ARCHIVE_NAME="${DST_BASENAME}.tar.gz"
+    mkdir -p "${DST_DIR}" "$(readlink -f .)/packages"
 
     local EXTRA_LIBS=""
     local EXTRA_FILES=""
@@ -29,7 +30,8 @@ make_package() {
     local FILES=$(find -L "${SRC_DIR}" -name '*.py')
 
     echo "* output: $ARCHIVE_NAME"
-    rm -rf "${DST_DIR}" "${ARCHIVE_NAME}"
+    rm -rf "${DST_DIR}" "${PKG_DIR}/${ARCHIVE_NAME}"
+    mkdir -p "${DST_DIR}"
 
     echo "* adding $(echo $FILES | wc -w) python source(s) from ${SRC_DIR}"
     for FILE in ${FILES}; do
@@ -44,14 +46,14 @@ make_package() {
         cp -RT "${FILE}" "${DST_DIR}/${FILE_BASENAME}"
     done
 
-    mkdir -p libs
+    mkdir -p "${DST_DIR}/libs"
     for FILE in ${EXTRA_LIBS}; do
         local FILE_BASENAME=$(basename "${FILE}")
         echo "* adding lib $FILE_BASENAME ($FILE)"
         cp -RT "${FILE}" "${DST_DIR}/libs/${FILE_BASENAME}"
     done
 
-    tar zcf "${ARCHIVE_NAME}" -C "${DST_DIRNAME}" "${DST_BASENAME}"
+    tar zcf "${PKG_DIR}/${ARCHIVE_NAME}" -C "$(dirname "${DST_DIR}")" "$(basename "${DST_DIR}")"
 }
 
 CLIENT_LIB_NAMES="Xlib pkg_resources.py"
@@ -65,7 +67,7 @@ for LIB in ../libs/*.py; do
     LIBS+=" $LIB"
 done
 
-make_package ../client ./eXtend-client-linux-64bit --libs ../libs/x86_64/netifaces.so $LIBS $CLIENT_LIBS
-make_package ../client ./eXtend-client-linux-32bit --libs ../libs/i386/netifaces.so $LIBS $CLIENT_LIBS
-make_package ../server ./eXtend-server --libs $LIBS
+make_package ../client eXtend-client-linux-64bit --libs ../libs/x86_64/netifaces.so $LIBS $CLIENT_LIBS
+make_package ../client eXtend-client-linux-32bit --libs ../libs/i386/netifaces.so $LIBS $CLIENT_LIBS
+make_package ../server eXtend-server --libs $LIBS
 
